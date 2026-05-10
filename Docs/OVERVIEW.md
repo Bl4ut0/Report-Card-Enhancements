@@ -13,13 +13,7 @@ CLA and RPB are independent. They do not share a spreadsheet, Apps Script projec
 
 The upstream CLA/RPB sheets are third-party community tools. This project does not claim ownership of those sheets; it adds local documentation, Worker proxy support, and automation patches around them.
 
-Era-specific support and attribution are tracked in `Docs/VERSION_ORGANIZATION.md`.
-
-The TBC/Vanilla CLA/RPB hub referenced by the source sheets is:
-
-```text
-https://discord.gg/nGvt5zH
-```
+Era-specific support, attribution, and release state are tracked in `Docs/VERSION_ORGANIZATION.md`. Upstream sheet links and private deployment links should not be published in this repository.
 
 ## Current Repository Layout
 

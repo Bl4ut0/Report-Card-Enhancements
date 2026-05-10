@@ -2,16 +2,18 @@
 
 CLA and RPB are community-maintained Google Apps Script tools with different upstream maintainers across game eras. This repo adds local documentation, Worker proxy support, and automation patches around those tools. It does not claim ownership of the upstream sheets.
 
-## Upstream Credit Matrix
+Default upstream credit is Shariva unless a row below names different community maintainers. Release state describes what this repo currently provides, not the upstream sheet status. Do not publish upstream sheet links or private deployment links in this repository.
 
-| Era / Version Family | CLA Upstream Credit | RPB Upstream Credit | Current Repo Status |
+## Support Matrix
+
+| Era / Version Family | CLA Upstream Credit | RPB Upstream Credit | Repo Release State |
 |---|---|---|---|
-| Vanilla | `shariva` | `shariva` where applicable | Supported family; add version-specific patches as needed. |
-| TBC | `shariva` | `shariva` | Current committed Worker examples target TBC `v1.6.0a`. |
-| Season of Discovery (SOD) | Community members, mainly `Pazrea` | Community members, mainly `Pazrea` where applicable | Being added as a new supported branch/family. |
-| Wrath of the Lich King (WOTLK) | TBD; document exact upstream sheet before patching | TBD; document exact upstream sheet before patching | Supported family; upstream credit must be confirmed per sheet/version. |
-| Cataclysm | Community version managed by `@BZ`, with substantial coding by `@Salino` | No known community RPB version | CLA-only support expected unless a community RPB appears. |
-| Mists of Pandaria (MoP) | Community version managed by `@BZ`, with substantial coding by `@Salino` where applicable | TBD; document exact upstream sheet before patching | Supported family; document exact upstream source before patching. |
+| Vanilla | Shariva | Shariva where applicable | Scaffold only; no committed version-specific patches/examples yet. |
+| TBC | Shariva | Shariva | Worker Proxy examples committed for CLA/RPB `v1.6.0a`; automation patches are still generic pre-1.0. |
+| Season of Discovery (SOD) | Community, mainly Tallia/Pazrea | Community, mainly Tallia/Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
+| Wrath of the Lich King (WOTLK) | Shariva unless otherwise specified by upstream sheet | Shariva unless otherwise specified by upstream sheet | Scaffold only; no committed version-specific patches/examples yet. |
+| Cataclysm | Community CLA managed by BZ, with substantial coding by Salino | No known community RPB version | CLA scaffold only; no RPB path unless a community RPB appears. |
+| Mists of Pandaria (MoP) | Community CLA managed by BZ, with substantial coding by Salino | Community RPB by Tallia/Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
 
 ## Organization Rules
 
@@ -93,6 +95,7 @@ When adding a new era or upstream sheet version:
 3. Record the upstream version string exactly as shown in the sheet.
 4. Document any changed cell locations, function names, sheet names, export behavior, or Discord behavior.
 5. Update `Worker Proxy/docs/CHANGELOG.md` or `Automations/docs/CHANGELOG.md` when committed support changes.
+6. Do not publish upstream spreadsheet links, Discord invite links, private Web App URLs, webhook URLs, API keys, or deployment-specific hostnames.
 
 ## Current Notes
 

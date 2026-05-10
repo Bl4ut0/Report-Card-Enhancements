@@ -60,19 +60,15 @@ Do not commit real Web App URLs, Discord webhooks, WarcraftLogs tokens, Cloudfla
 
 The upstream CLA/RPB sheets are community tools. This repo only contains local enhancement, proxy, and automation work around those sheets.
 
-Current attribution notes:
+Default upstream credit is `Shariva` unless a row below names different community maintainers. Release state describes what this repo currently provides, not the upstream sheet status.
 
-| Version / Era | CLA Credit | RPB Credit | Notes |
+| Version / Era | CLA Upstream Credit | RPB Upstream Credit | Repo Release State |
 |---|---|---|---|
-| Vanilla | `shariva` | `shariva` where applicable | Vanilla is maintained by `shariva`. |
-| TBC | `shariva` | `shariva` | Current committed examples are TBC-oriented. |
-| Season of Discovery | Community members, mainly `Pazrea` | Community members, mainly `Pazrea` where applicable | Not created by this repo. |
-| Wrath of the Lich King | TBD per upstream sheet/version | TBD per upstream sheet/version | Supported family; credit must be confirmed before patching. |
-| Cataclysm | Community version managed by `@BZ`, with substantial coding by `@Salino` | No known community RPB version | Cata CLA is not created by this repo. |
-| Mists of Pandaria | Community version managed by `@BZ`, with substantial coding by `@Salino` where applicable | TBD per upstream sheet/version | MoP CLA is not created by this repo. |
+| Vanilla | Shariva | Shariva where applicable | Scaffold only; no committed version-specific patches/examples yet. |
+| TBC | Shariva | Shariva | Worker Proxy examples committed for CLA/RPB `v1.6.0a`; automation patches are still generic pre-1.0. |
+| Season of Discovery | Community, mainly Tallia/Pazrea | Community, mainly Tallia/Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
+| Wrath of the Lich King | Shariva unless otherwise specified by upstream sheet | Shariva unless otherwise specified by upstream sheet | Scaffold only; no committed version-specific patches/examples yet. |
+| Cataclysm | Community CLA managed by BZ, with substantial coding by Salino | No known community RPB version | CLA scaffold only; no RPB path unless a community RPB appears. |
+| Mists of Pandaria | Community CLA managed by BZ, with substantial coding by Salino | Community RPB by Tallia/Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
 
-Original/updated versions are distributed through the relevant community hubs. The TBC/Vanilla CLA/RPB hub referenced by the source sheets is:
-
-```text
-https://discord.gg/nGvt5zH
-```
+Do not publish upstream sheet links or private deployment links in this repository.
