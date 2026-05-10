@@ -95,11 +95,11 @@ When adding a new era or upstream sheet version:
 
 ## Current Notes
 
-The existing committed Worker Proxy examples are TBC `v1.6.0a` examples in the older path shape:
+The existing committed Worker Proxy examples are TBC `v1.6.0a` examples:
 
 ```text
-Worker Proxy/examples/CLA/v1.6.0a/
-Worker Proxy/examples/RPB/v1.6.0a/
+Worker Proxy/examples/CLA/TBC/v1.6.0a/
+Worker Proxy/examples/RPB/TBC/v1.6.0a/
 ```
 
-New Vanilla, TBC, SOD, WOTLK, Cata, and MoP work should use the explicit era folder shape. Existing TBC paths can be moved in a separate cleanup when it is useful and low-risk.
+New Vanilla, TBC, SOD, WOTLK, Cata, and MoP work should use the explicit era folder shape.

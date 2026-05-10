@@ -15,14 +15,34 @@ Worker Proxy/
   worker.js
   examples/
     CLA/
+      TBC/
+        v1.6.0a/
+          General.gs
+    RPB/
+      TBC/
+        v1.6.0a/
+          Filtering.gs
+```
+
+The example files show the TBC v1.6.0a source-level implementation already applied.
+
+## Version Layout
+
+New example files should use this shape:
+
+```text
+Worker Proxy/examples/
+  CLA/
+    <Era>/
       v1.6.0a/
         General.gs
-    RPB/
+  RPB/
+    <Era>/
       v1.6.0a/
         Filtering.gs
 ```
 
-The example files show the TBC v1.6.0a source-level implementation already applied.
+The current committed examples use `TBC` as the era folder.
 
 ## Cloudflare Worker
 
@@ -47,7 +67,7 @@ Current Source/CLA/v1.6.0a/General.gs
 Committed reference implementation:
 
 ```text
-Worker Proxy/examples/CLA/v1.6.0a/General.gs
+Worker Proxy/examples/CLA/TBC/v1.6.0a/General.gs
 ```
 
 Target function:
@@ -77,7 +97,7 @@ Then add `fetchDiscordWebhook_(...)` and `getDiscordWebhookRequest_(...)` after 
 See the complete implemented example:
 
 ```text
-Worker Proxy/examples/CLA/v1.6.0a/General.gs
+Worker Proxy/examples/CLA/TBC/v1.6.0a/General.gs
 ```
 
 ## RPB TBC v1.6.0a Change
@@ -91,7 +111,7 @@ Current Source/RPB/v1.6.0a/Filtering.gs
 Committed reference implementation:
 
 ```text
-Worker Proxy/examples/RPB/v1.6.0a/Filtering.gs
+Worker Proxy/examples/RPB/TBC/v1.6.0a/Filtering.gs
 ```
 
 Target function:
@@ -111,7 +131,7 @@ Then add the same helper functions after `postMessageToDiscord(...)`.
 See the complete implemented example:
 
 ```text
-Worker Proxy/examples/RPB/v1.6.0a/Filtering.gs
+Worker Proxy/examples/RPB/TBC/v1.6.0a/Filtering.gs
 ```
 
 ## Helper Functions

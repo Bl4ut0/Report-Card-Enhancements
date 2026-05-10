@@ -14,8 +14,8 @@ This folder contains the Cloudflare Worker relay and source-level examples.
 | Item | Path |
 |---|---|
 | Worker source | `../worker.js` |
-| Source-level TBC CLA example | `../examples/CLA/v1.6.0a/General.gs` |
-| Source-level TBC RPB example | `../examples/RPB/v1.6.0a/Filtering.gs` |
+| Source-level TBC CLA example | `../examples/CLA/TBC/v1.6.0a/General.gs` |
+| Source-level TBC RPB example | `../examples/RPB/TBC/v1.6.0a/Filtering.gs` |
 
 ## Source-Level Proxy Parser
 
