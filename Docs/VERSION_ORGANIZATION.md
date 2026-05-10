@@ -6,11 +6,12 @@ CLA and RPB are community-maintained Google Apps Script tools with different ups
 
 | Era / Version Family | CLA Upstream Credit | RPB Upstream Credit | Current Repo Status |
 |---|---|---|---|
-| Vanilla | `shariva` | `shariva` where applicable | Planned/available for version-specific support as needed. |
+| Vanilla | `shariva` | `shariva` where applicable | Supported family; add version-specific patches as needed. |
 | TBC | `shariva` | `shariva` | Current committed Worker examples target TBC `v1.6.0a`. |
 | Season of Discovery (SOD) | Community members, mainly `Pazrea` | Community members, mainly `Pazrea` where applicable | Being added as a new supported branch/family. |
+| Wrath of the Lich King (WOTLK) | TBD; document exact upstream sheet before patching | TBD; document exact upstream sheet before patching | Supported family; upstream credit must be confirmed per sheet/version. |
 | Cataclysm | Community version managed by `@BZ`, with substantial coding by `@Salino` | No known community RPB version | CLA-only support expected unless a community RPB appears. |
-| Mists of Pandaria (MoP) | Community version managed by `@BZ`, with substantial coding by `@Salino` | TBD | Future/adjacent support; document exact upstream source before patching. |
+| Mists of Pandaria (MoP) | Community version managed by `@BZ`, with substantial coding by `@Salino` where applicable | TBD; document exact upstream sheet before patching | Supported family; document exact upstream source before patching. |
 
 ## Organization Rules
 
@@ -22,16 +23,28 @@ Preferred shape for committed examples:
 Worker Proxy/
   examples/
     CLA/
+      Vanilla/
+        <upstream-version>/
       TBC/
         v1.6.0a/
       SOD/
+        <upstream-version>/
+      WOTLK/
         <upstream-version>/
       Cata/
         <upstream-version>/
+      MoP/
+        <upstream-version>/
     RPB/
+      Vanilla/
+        <upstream-version>/
       TBC/
         v1.6.0a/
       SOD/
+        <upstream-version>/
+      WOTLK/
+        <upstream-version>/
+      MoP/
         <upstream-version>/
 ```
 
@@ -41,20 +54,34 @@ Preferred shape for version-specific automation patches, when the generic root p
 Automations/
   patches/
     CLA/
+      Vanilla/
+        <upstream-version>/
       TBC/
         v1.6.0a/
       SOD/
+        <upstream-version>/
+      WOTLK/
         <upstream-version>/
       Cata/
         <upstream-version>/
+      MoP/
+        <upstream-version>/
     RPB/
+      Vanilla/
+        <upstream-version>/
       TBC/
         v1.6.0a/
       SOD/
+        <upstream-version>/
+      WOTLK/
+        <upstream-version>/
+      MoP/
         <upstream-version>/
 ```
 
 Keep shared helpers at the component root only when they are truly version-neutral.
+
+Do not create `RPB/Cata/` unless a community Cataclysm RPB sheet appears. As of this document, only Cataclysm CLA is known.
 
 ## Documentation Rules
 
@@ -75,4 +102,4 @@ Worker Proxy/examples/CLA/v1.6.0a/
 Worker Proxy/examples/RPB/v1.6.0a/
 ```
 
-New SOD and later work should use the explicit era folder shape. Existing TBC paths can be moved in a separate cleanup when it is useful and low-risk.
+New Vanilla, TBC, SOD, WOTLK, Cata, and MoP work should use the explicit era folder shape. Existing TBC paths can be moved in a separate cleanup when it is useful and low-risk.

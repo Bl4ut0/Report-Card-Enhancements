@@ -62,18 +62,32 @@ Patches and source-level examples should be organized by tool, era, and upstream
 <component>/
   examples/
     CLA/
+      Vanilla/
+        <version>/
       TBC/
         v1.6.0a/
       SOD/
         <version>/
+      WOTLK/
+        <version>/
+      Cata/
+        <version>/
+      MoP/
+        <version>/
     RPB/
+      Vanilla/
+        <version>/
       TBC/
         v1.6.0a/
       SOD/
+        <version>/
+      WOTLK/
+        <version>/
+      MoP/
         <version>/
 ```
 
-The current committed Worker examples predate the era folder split and are TBC `v1.6.0a` examples. New SOD/Cata/MoP work should use explicit era folders so fixes do not get mistaken as universal across all CLA/RPB variants.
+The current committed Worker examples predate the era folder split and are TBC `v1.6.0a` examples. New Vanilla, TBC, SOD, WOTLK, Cata, and MoP work should use explicit era folders so fixes do not get mistaken as universal across all CLA/RPB variants. Do not add Cataclysm RPB folders unless a community RPB version appears.
 
 ## CLA Patch Flow
 

@@ -9,7 +9,7 @@ Patch files live one level up in `../` and are uploaded into the target Google A
 - Verify action map function names against the live Apps Script function dropdown before deploying.
 - Re-deploy the Web App as a new version after each patch update.
 - Treat these patches as pre-1.0 until the n8n workflow contract is stable.
-- Track version-specific behavior by era and upstream sheet version. Do not assume a TBC function name, cell location, or export behavior applies to SOD/Cata/MoP.
+- Track version-specific behavior by era and upstream sheet version. Do not assume a function name, cell location, or export behavior applies across Vanilla, TBC, SOD, WOTLK, Cata, and MoP.
 
 ## Active Files
 
