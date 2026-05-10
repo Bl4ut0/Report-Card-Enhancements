@@ -1,0 +1,8 @@
+.env
+*.rar
+compose.yml
+**/compose.yml
+
+## Folders
+Original Code/
+Current Source/
