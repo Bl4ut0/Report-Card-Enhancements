@@ -4,7 +4,7 @@
 
 CLA and RPB are separate Google Sheet based Apps Script tools. This repo adds automation and delivery support around them without making the two tools depend on each other.
 
-The upstream TBC CLA/RPB sheets are credited to `shariva`. This repo owns only the enhancement layer: documentation, Worker proxy support, and automation patches.
+The upstream CLA/RPB sheets are community-maintained and vary by game era. This repo owns only the enhancement layer: documentation, Worker proxy support, and automation patches. See `Docs/VERSION_ORGANIZATION.md` for era-specific credits and support status.
 
 | Boundary | CLA | RPB |
 |---|---|---|
@@ -53,6 +53,27 @@ n8n HTTP POST
 ```
 
 Patch files should avoid duplicate function names that could collide with core scripts. Shared helper functions use trailing underscores where practical.
+
+## Version Organization
+
+Patches and source-level examples should be organized by tool, era, and upstream version when version-specific behavior appears:
+
+```text
+<component>/
+  examples/
+    CLA/
+      TBC/
+        v1.6.0a/
+      SOD/
+        <version>/
+    RPB/
+      TBC/
+        v1.6.0a/
+      SOD/
+        <version>/
+```
+
+The current committed Worker examples predate the era folder split and are TBC `v1.6.0a` examples. New SOD/Cata/MoP work should use explicit era folders so fixes do not get mistaken as universal across all CLA/RPB variants.
 
 ## CLA Patch Flow
 

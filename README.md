@@ -45,6 +45,7 @@ For the broader system map, start here:
 
 ```text
 Docs/OVERVIEW.md
+Docs/VERSION_ORGANIZATION.md
 ```
 
 ## Important Boundaries
@@ -57,9 +58,19 @@ Do not commit real Web App URLs, Discord webhooks, WarcraftLogs tokens, Cloudfla
 
 ## Credits
 
-The original TBC Combat Log Analytics (CLA) and Role Performance Breakdown (RPB) sheets were created and maintained by `shariva` for TBC WarcraftLogs analysis. This repo only contains local enhancement, proxy, and automation work around those sheets.
+The upstream CLA/RPB sheets are community tools. This repo only contains local enhancement, proxy, and automation work around those sheets.
 
-Original/updated CLA and RPB versions are distributed through the creator's Discord hub:
+Current attribution notes:
+
+| Version / Era | CLA Credit | RPB Credit | Notes |
+|---|---|---|---|
+| Vanilla | `shariva` | `shariva` where applicable | Vanilla is maintained by `shariva`. |
+| TBC | `shariva` | `shariva` | Current committed examples are TBC-oriented. |
+| Season of Discovery | Community members, mainly `Pazrea` | Community members, mainly `Pazrea` where applicable | Not created by this repo. |
+| Cataclysm | Community version managed by `@BZ`, with substantial coding by `@Salino` | No known community RPB version | Cata CLA is not created by this repo. |
+| Mists of Pandaria | Community version managed by `@BZ`, with substantial coding by `@Salino` | TBD | MoP CLA is not created by this repo. |
+
+Original/updated versions are distributed through the relevant community hubs. The TBC/Vanilla CLA/RPB hub referenced by the source sheets is:
 
 ```text
 https://discord.gg/nGvt5zH

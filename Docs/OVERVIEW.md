@@ -11,9 +11,11 @@ CLA and RPB are independent. They do not share a spreadsheet, Apps Script projec
 
 ## Upstream Credit
 
-The original TBC CLA/RPB sheets are third-party tools created and maintained by `shariva` for TBC WarcraftLogs analysis. This project does not claim ownership of those sheets; it adds local documentation, Worker proxy support, and automation patches around them.
+The upstream CLA/RPB sheets are third-party community tools. This project does not claim ownership of those sheets; it adds local documentation, Worker proxy support, and automation patches around them.
 
-Original/updated versions are available from the creator's Discord hub:
+Era-specific support and attribution are tracked in `Docs/VERSION_ORGANIZATION.md`.
+
+The TBC/Vanilla CLA/RPB hub referenced by the source sheets is:
 
 ```text
 https://discord.gg/nGvt5zH
@@ -49,6 +51,7 @@ Report Card Enhancements/
   Docs/
     ARCHITECTURE.md
     KNOWN_ISSUES.md
+    VERSION_ORGANIZATION.md
 ```
 
 Local-only ignored folders may exist in a working checkout:
@@ -91,4 +94,4 @@ The preferred automation pattern is to let n8n orchestrate queueing, retries, an
 
 ## Version Notes
 
-The active working source snapshot is `v1.6.0a`. Worker Proxy and automation patch versions are tracked inside their own folders.
+The active committed examples are currently TBC-oriented `v1.6.0a` examples. Version and era support is tracked in `Docs/VERSION_ORGANIZATION.md`. Worker Proxy and automation patch versions are tracked inside their own folders.

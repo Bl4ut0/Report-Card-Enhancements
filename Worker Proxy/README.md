@@ -4,7 +4,7 @@ Cloudflare Worker proxy support for CLA and RPB Discord webhook delivery.
 
 Opening version: `1.0.0`.
 
-The upstream TBC CLA/RPB sheets are credited to `shariva`; this Worker is only a Discord delivery enhancement around those sheets.
+The upstream CLA/RPB sheets are community-maintained and vary by game era; this Worker is only a Discord delivery enhancement around those sheets.
 
 This is for cases where Google Apps Script requests to Discord are rate-limited or blocked with Discord/Cloudflare errors such as `429` or `1015`.
 
@@ -22,7 +22,7 @@ Worker Proxy/
         Filtering.gs
 ```
 
-The example files show the v1.6.0a source-level implementation already applied.
+The example files show the TBC v1.6.0a source-level implementation already applied.
 
 ## Cloudflare Worker
 
@@ -36,7 +36,7 @@ DISCORD_PROXY_SECRET
 
 Set it to a long random value. Do not hardcode the Discord webhook URL or the secret into `worker.js`.
 
-## CLA v1.6.0a Change
+## CLA TBC v1.6.0a Change
 
 Target source file in a local ignored source snapshot, if you keep one:
 
@@ -80,7 +80,7 @@ See the complete implemented example:
 Worker Proxy/examples/CLA/v1.6.0a/General.gs
 ```
 
-## RPB v1.6.0a Change
+## RPB TBC v1.6.0a Change
 
 Target source file in a local ignored source snapshot, if you keep one:
 

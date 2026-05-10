@@ -2,7 +2,7 @@
 
 Apps Script patch files and local n8n setup for automating CLA and RPB.
 
-The upstream TBC CLA/RPB sheets are credited to `shariva`; these files are only the automation layer around those sheets.
+The upstream CLA/RPB sheets are community-maintained and vary by game era; these files are only the automation layer around those sheets.
 
 Current status: pre-1.0. The patch API is usable, but it should remain `0.x` until the n8n workflow contract has been proven end to end.
 

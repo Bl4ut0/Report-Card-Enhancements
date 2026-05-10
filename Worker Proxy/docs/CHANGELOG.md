@@ -7,8 +7,8 @@ Opening version of the Worker Proxy package.
 ### Added
 
 - Cloudflare Worker relay in `worker.js`.
-- Source-level CLA v1.6.0a example in `examples/CLA/v1.6.0a/General.gs`.
-- Source-level RPB v1.6.0a example in `examples/RPB/v1.6.0a/Filtering.gs`.
+- Source-level TBC CLA v1.6.0a example in `examples/CLA/v1.6.0a/General.gs`.
+- Source-level TBC RPB v1.6.0a example in `examples/RPB/v1.6.0a/Filtering.gs`.
 - Support for raw Discord webhook mode and Worker proxy mode.
 - Header-based relay contract:
   - `x-discord-webhook`
