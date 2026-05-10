@@ -2,7 +2,9 @@
 
 CLA and RPB are community-maintained Google Apps Script tools with different upstream maintainers across game eras. This repo adds local documentation, Worker proxy support, and automation patches around those tools. It does not claim ownership of the upstream sheets.
 
-Credits are listed directly by era. Release state describes what this repo currently provides, not the upstream sheet status. Do not publish upstream sheet links or private deployment links in this repository.
+Credits are listed directly by era. Release state describes what this repo currently provides, not the upstream sheet status.
+
+Community Discord: https://discord.gg/nGvt5zH
 
 ## Support Matrix
 
@@ -95,7 +97,6 @@ When adding a new era or upstream sheet version:
 3. Record the upstream version string exactly as shown in the sheet.
 4. Document any changed cell locations, function names, sheet names, export behavior, or Discord behavior.
 5. Update `Worker Proxy/docs/CHANGELOG.md` or `Automations/docs/CHANGELOG.md` when committed support changes.
-6. Do not publish upstream spreadsheet links, Discord invite links, private Web App URLs, webhook URLs, API keys, or deployment-specific hostnames.
 
 ## Current Notes
 
