@@ -2,16 +2,16 @@
 
 CLA and RPB are community-maintained Google Apps Script tools with different upstream maintainers across game eras. This repo adds local documentation, Worker proxy support, and automation patches around those tools. It does not claim ownership of the upstream sheets.
 
-Default upstream credit is Shariva unless a row below names different community maintainers. Release state describes what this repo currently provides, not the upstream sheet status. Do not publish upstream sheet links or private deployment links in this repository.
+Credits are listed directly by era. Release state describes what this repo currently provides, not the upstream sheet status. Do not publish upstream sheet links or private deployment links in this repository.
 
 ## Support Matrix
 
 | Era / Version Family | CLA Upstream Credit | RPB Upstream Credit | Repo Release State |
 |---|---|---|---|
-| Vanilla | Shariva | Shariva where applicable | Scaffold only; no committed version-specific patches/examples yet. |
+| Vanilla | Shariva | Shariva | Scaffold only; no committed version-specific patches/examples yet. |
 | TBC | Shariva | Shariva | Worker Proxy examples committed for CLA/RPB `v1.6.0a`; automation patches are still generic pre-1.0. |
 | Season of Discovery (SOD) | Community, mainly Tallia/Pazrea | Community, mainly Tallia/Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
-| Wrath of the Lich King (WOTLK) | Shariva unless otherwise specified by upstream sheet | Shariva unless otherwise specified by upstream sheet | Scaffold only; no committed version-specific patches/examples yet. |
+| Wrath of the Lich King (WOTLK) | Shariva | Shariva | Scaffold only; no committed version-specific patches/examples yet. |
 | Cataclysm | Community CLA managed by BZ, with substantial coding by Salino | No known community RPB version | CLA scaffold only; no RPB path unless a community RPB appears. |
 | Mists of Pandaria (MoP) | Community CLA managed by BZ, with substantial coding by Salino | Community RPB by Tallia/Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
 
