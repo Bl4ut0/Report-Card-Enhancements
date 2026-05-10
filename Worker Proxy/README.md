@@ -38,10 +38,16 @@ Set it to a long random value. Do not hardcode the Discord webhook URL or the se
 
 ## CLA v1.6.0a Change
 
-Target file:
+Target source file in a local ignored source snapshot, if you keep one:
 
 ```text
 Current Source/CLA/v1.6.0a/General.gs
+```
+
+Committed reference implementation:
+
+```text
+Worker Proxy/examples/CLA/v1.6.0a/General.gs
 ```
 
 Target function:
@@ -76,10 +82,16 @@ Worker Proxy/examples/CLA/v1.6.0a/General.gs
 
 ## RPB v1.6.0a Change
 
-Target file:
+Target source file in a local ignored source snapshot, if you keep one:
 
 ```text
 Current Source/RPB/v1.6.0a/Filtering.gs
+```
+
+Committed reference implementation:
+
+```text
+Worker Proxy/examples/RPB/v1.6.0a/Filtering.gs
 ```
 
 Target function:

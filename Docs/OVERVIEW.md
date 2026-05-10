@@ -21,22 +21,10 @@ https://discord.gg/nGvt5zH
 
 ## Current Repository Layout
 
+Committed files:
+
 ```text
 Report Card Enhancements/
-  Current Source/
-    CLA/
-      v1.6.0a/
-    RPB/
-      v1.6.0a/
-
-  Original Code/
-    CLA/
-      v1.6.0/
-      v1.6.0a/
-    RPB/
-      v1.6.0/
-      v1.6.0a/
-
   Worker Proxy/
     README.md
     docs/
@@ -63,12 +51,25 @@ Report Card Enhancements/
     KNOWN_ISSUES.md
 ```
 
+Local-only ignored folders may exist in a working checkout:
+
+```text
+Current Source/
+  CLA/
+  RPB/
+
+Original Code/
+  CLA/
+  RPB/
+```
+
 ## Owned Layers
 
 | Layer | Owned Here? | Notes |
 |---|---:|---|
 | CLA/RPB upstream behavior | No | Core tools are third-party and should be treated as upstream source. |
-| `Current Source/` snapshots | Yes | Used for local review and prepared source-level changes. |
+| `Current Source/` snapshots | Local only | Ignored source snapshots used for private/local review. |
+| `Original Code/` snapshots | Local only | Ignored upstream/reference snapshots. |
 | `Worker Proxy/` | Yes | Cloudflare Worker relay and source-level proxy examples. |
 | `Automations/` | Yes | Apps Script patch files for automation and orchestration. |
 | `Docs/` | Yes | Project guidance, registry, and troubleshooting. |

@@ -16,13 +16,9 @@ The upstream TBC CLA/RPB sheets are credited to `shariva`. This repo owns only t
 
 ## Repository Layers
 
+Committed layers:
+
 ```text
-Original Code/
-  Historical/reference snapshots.
-
-Current Source/
-  Current v1.6.0a source snapshots used for prepared changes.
-
 Worker Proxy/
   Cloudflare Worker relay, source-level examples, and Worker-specific docs.
 
@@ -31,6 +27,16 @@ Automations/
 
 Docs/
   Repo-level overview, architecture, and cross-cutting troubleshooting.
+```
+
+Local ignored layers:
+
+```text
+Original Code/
+  Historical/reference snapshots.
+
+Current Source/
+  Editable/reference source snapshots used for private local comparison.
 ```
 
 ## Apps Script Patch Model
