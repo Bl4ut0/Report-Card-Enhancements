@@ -43,6 +43,7 @@ Worker Proxy/examples/
 ```
 
 The current committed examples use `TBC` as the era folder.
+Planned era folders are present with `.gitkeep` placeholders until real version-specific examples are added.
 
 ## Cloudflare Worker
 

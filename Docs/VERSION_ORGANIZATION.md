@@ -16,6 +16,7 @@ CLA and RPB are community-maintained Google Apps Script tools with different ups
 ## Organization Rules
 
 Use explicit tool, era, and upstream version when adding version-specific files.
+Placeholder `.gitkeep` files keep planned era folders visible until the exact upstream version folder is known.
 
 Preferred shape for committed examples:
 

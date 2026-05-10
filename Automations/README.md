@@ -15,6 +15,7 @@ Current status: pre-1.0. The patch API is usable, but it should remain `0.x` unt
 | `RPB_Patch_n8n.gs` | RPB Web App patch for `setReportId`, `runFull`, and `status`. |
 | `Shared_DiscordWebhook.gs` | Optional patch-only Discord proxy helper and export wrappers. |
 | `compose.example.yml` | Safe example for local/self-hosted n8n compose setup. |
+| `patches/` | Version-specific patch folders organized by tool and era. |
 
 ## Upload Targets
 
