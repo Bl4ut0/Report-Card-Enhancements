@@ -39,6 +39,19 @@ Add or merge:
 
 Replace `YOUR_N8N_HOST` and `your_n8n_api_key_here`.
 
+## Workflow Access
+
+The MCP server can list workflows that the API key can see, but detailed reads and updates require workflow-level MCP access. In n8n, enable MCP access in the workflow settings for any workflow an assistant should inspect or update.
+
+For the CRC automation cleanup, enable MCP access on:
+
+```text
+CRC - Report Queue
+CRC - Manual Form
+```
+
+Those workflows should then be merged or replaced by one expansion-scoped workflow where manual intake and WarcraftLogs monitoring both feed the same queue.
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -46,6 +59,7 @@ Replace `YOUR_N8N_HOST` and `your_n8n_api_key_here`.
 | MCP server does not load | Check `%APPDATA%\Claude\logs\mcp-server-n8n.log`. |
 | `401 Unauthorized` | Regenerate or correct the n8n API key. |
 | `ECONNREFUSED` | Confirm n8n is running and the URL/port is correct. |
+| Workflow lists but details fail | Enable MCP access in that workflow's settings. |
 | `npx` fails | Run `npx @leonardsellem/n8n-mcp-server --version` in a terminal. |
 
 ## Security

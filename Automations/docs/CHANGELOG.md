@@ -2,6 +2,20 @@
 
 Automation patches are pre-1.0. Version numbers describe iteration state, not a stable public API.
 
+## [0.3.1] - Unreleased
+
+### Documentation
+
+- Reframed automation around expansion-scoped lanes instead of separate manual and automatic systems.
+- Documented the required execution order: CLA first, then RPB.
+- Clarified that n8n owns the cross-sheet expansion lock and shared WarcraftLogs API-key lock.
+- Clarified that sheet-side export logic owns public announcements; n8n owns orchestration and callbacks.
+
+### Changed
+
+- `CLA_Patch_n8n.gs` now keeps sheet-managed announcements enabled by default.
+- `options.suppressCoreDiscord=true` can still mute the sheet webhook for a specific fallback/test run.
+
 ## [0.3.0] - 2026-05-09
 
 ### CLA_Patch_n8n.gs

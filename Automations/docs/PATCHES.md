@@ -9,7 +9,8 @@ Patch files live one level up in `../` and are uploaded into the target Google A
 - Verify action map function names against the live Apps Script function dropdown before deploying.
 - Re-deploy the Web App as a new version after each patch update.
 - Treat these patches as pre-1.0 until the n8n workflow contract is stable.
-- Track version-specific behavior by era and upstream sheet version. Do not assume a function name, cell location, or export behavior applies across Vanilla, TBC, SOD, WOTLK, Cata, and MoP.
+- Track version-specific behavior by expansion and upstream sheet version. Do not assume a function name, cell location, or export behavior applies across Vanilla, TBC, SOD, WOTLK, Cata, and MoP.
+- Treat Apps Script locks as sheet-local guardrails. The n8n workflow owns the expansion queue lock and the shared WarcraftLogs API lock.
 
 ## Active Files
 
@@ -38,12 +39,15 @@ Patch files live one level up in `../` and are uploaded into the target Google A
 | Field | Value |
 |---|---|
 | Target | CLA Apps Script project |
-| Version | 0.3.0 |
+| Version | 0.3.1 |
 | Purpose | Exposes CLA actions as an n8n-callable Web App. |
 | Required files | `Shared_Config.gs` |
 | Required properties | `N8N_SECRET` |
 | Report ID cell | `Instructions!E11` |
 | Lock TTL | 30 minutes |
+| Sheet announcements | Enabled by default; set `options.suppressCoreDiscord=true` to mute for one request. |
+
+The CLA lock only protects the CLA Apps Script project. It does not prevent RPB or another expansion workflow from using the same WarcraftLogs API key at the same time.
 
 Available actions:
 
@@ -72,6 +76,8 @@ Available actions:
 | Required properties | `N8N_SECRET` |
 | Report ID cell | `Instructions!E11` |
 | Lock TTL | 30 minutes |
+
+The RPB lock only protects the RPB Apps Script project. It does not replace the n8n expansion queue lock.
 
 Available actions:
 

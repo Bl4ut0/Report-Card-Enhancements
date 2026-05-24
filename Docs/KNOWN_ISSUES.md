@@ -26,24 +26,33 @@
 |---|---|
 | Affects | n8n-triggered CLA/RPB runs |
 | Cause | Patch files do not pre-check WarcraftLogs API token quota. |
-| Mitigation | Add quota checks and retry/backoff in the n8n workflow before calling Apps Script actions. |
+| Mitigation | Add quota checks, retry/backoff, and a global API-key lock in n8n before calling Apps Script actions. |
+| Status | Open |
+
+### Existing n8n workflows are split by intake path
+
+| Field | Value |
+|---|---|
+| Affects | Manual form and WarcraftLogs monitor automation |
+| Cause | Manual and automatic workflows can drift even though they mutate the same expansion sheets. |
+| Mitigation | Merge both intake paths into one normalized expansion queue that runs CLA, then RPB. |
 | Status | Open |
 
 ## Resolved Issues
 
 | Issue | Resolution | Date |
 |---|---|---|
-| CLA final export could fail after Discord/Cloudflare returned 429 or 1015 | `CLA_Patch_n8n.gs` v0.3.0 can suppress the sheet-level Discord webhook during final export; n8n should own completion notification. | 2026-05 |
+| CLA final export could fail after Discord/Cloudflare returned 429 or 1015 | Sheet-side notification flow was repaired; `CLA_Patch_n8n.gs` keeps sheet announcements enabled by default and can mute them per request if needed. | 2026-05 |
 | Worker URLs pasted directly into sheet webhook fields could fail with `Invalid argument` | Added source-level parser examples and patch-only `Shared_DiscordWebhook.gs` helper. | 2026-05 |
 | Core function names were unclear | Action maps document the current expected function names and remain easy to verify before deployment. | 2026-04 |
 | Parallel triggers could corrupt output | Lock/TTL system added to both CLA and RPB patches. | 2026-04 |
 | New report IDs could overwrite an active run | `setReportId` returns HTTP 409 while a non-stale lock is active. | 2026-04 |
 | CLA had no multi-pass orchestration | `runPasses` action added. | 2026-04 |
-| CLA and RPB separation was unclear | Docs now state that they are separate sheets and separate Apps Script projects. | 2026-04 |
+| CLA and RPB physical boundaries were unclear | Docs now state that they are separate upstream sheets/projects but one expansion-scoped automation lane. | 2026-05 |
 
 ## Open Questions
 
 | Question | Current Recommendation |
 |---|---|
-| Should WarcraftLogs quota checks live in Apps Script or n8n? | n8n, because it owns queueing and retry decisions. |
-| Should Discord notifications live in Apps Script or n8n? | n8n for automated workflows; patch helper for standalone sheet/manual use. |
+| Should WarcraftLogs quota checks live in Apps Script or n8n? | n8n, because it owns queueing, retry decisions, and the global API-key lock. |
+| Should Discord notifications live in Apps Script or n8n? | Apps Script / sheet-side export flow owns public announcements; n8n owns orchestration and callbacks. |

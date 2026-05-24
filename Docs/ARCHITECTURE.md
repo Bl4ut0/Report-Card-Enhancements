@@ -2,9 +2,11 @@
 
 ## System Boundaries
 
-CLA and RPB are separate Google Sheet based Apps Script tools. This repo adds automation and delivery support around them without making the two tools depend on each other.
+CLA and RPB are separate Google Sheet based Apps Script tools. This repo adds automation, delivery, and Warcraft Logs API compatibility support around them without claiming ownership of upstream core logic.
 
-The upstream CLA/RPB sheets are community-maintained and vary by game era. This repo owns only the enhancement layer: documentation, Worker proxy support, and automation patches. See `Docs/VERSION_ORGANIZATION.md` for era-specific credits and support status.
+The automation runtime is organized by expansion. Each expansion lane owns the configured CLA/RPB sheet pair, Web App URLs, queue state, and WarcraftLogs API pacing for that expansion. Manual submissions and automatic WarcraftLogs group monitoring feed the same lane.
+
+The upstream CLA/RPB sheets are community-maintained and vary by game era. This repo owns only the enhancement layer: documentation, Worker proxy support, automation patches, and Warcraft Logs API wrapper scaffolding. See `Docs/VERSION_ORGANIZATION.md` for expansion-specific credits and support status.
 
 | Boundary | CLA | RPB |
 |---|---|---|
@@ -13,6 +15,17 @@ The upstream CLA/RPB sheets are community-maintained and vary by game era. This 
 | Web App URL | Separate deployment | Separate deployment |
 | Automation patch | `CLA_Patch_n8n.gs` | `RPB_Patch_n8n.gs` |
 | Main output | CLA analysis tabs/export | Role report cards/export |
+
+Automation combines those physical boundaries into an expansion lane:
+
+| Lane Item | Purpose |
+|---|---|
+| Expansion key | Selects the configured sheet pair and WarcraftLogs group monitor. |
+| CLA Web App URL | Runs `setReportId`, then `runPasses`. |
+| RPB Web App URL | Runs `setReportId`, then `runFull`. |
+| Queue lock | Serializes report work for the expansion. |
+| WarcraftLogs API lock | Prevents concurrent CLA/RPB calls from burning the single shared API key. |
+| Announcement target | Receives sheet-managed completion messages from the configured sheet notification path. |
 
 ## Repository Layers
 
@@ -24,6 +37,9 @@ Worker Proxy/
 
 Automations/
   Patch-only Apps Script files, setup docs, and patch changelog.
+
+V2 Wrapper/
+  Warcraft Logs V1/V2 compatibility wrapper scaffolding and version-specific replacement sets.
 
 Docs/
   Repo-level overview, architecture, and cross-cutting troubleshooting.
@@ -54,40 +70,68 @@ n8n HTTP POST
 
 Patch files should avoid duplicate function names that could collide with core scripts. Shared helper functions use trailing underscores where practical.
 
-## Version Organization
+## Expansion Organization
 
-Patches and source-level examples should be organized by tool, era, and upstream version when version-specific behavior appears:
+Patches and source-level examples should be organized by expansion, tool, and upstream version when version-specific behavior appears:
 
 ```text
 <component>/
   examples/
-    CLA/
-      Vanilla/
+    Vanilla/
+      CLA/
         <version>/
-      TBC/
+      RPB/
+        <version>/
+    TBC/
+      CLA/
         v1.6.0a/
-      SOD/
-        <version>/
-      WOTLK/
-        <version>/
-      Cata/
-        <version>/
-      MoP/
-        <version>/
-    RPB/
-      Vanilla/
-        <version>/
-      TBC/
+      RPB/
         v1.6.0a/
-      SOD/
+    SOD/
+      CLA/
         <version>/
-      WOTLK/
+      RPB/
         <version>/
-      MoP/
+    WOTLK/
+      CLA/
+        <version>/
+      RPB/
+        <version>/
+    Cata/
+      CLA/
+        <version>/
+    MoP/
+      CLA/
+        <version>/
+      RPB/
         <version>/
 ```
 
-The current committed Worker examples predate the era folder split and are TBC `v1.6.0a` examples. New Vanilla, TBC, SOD, WOTLK, Cata, and MoP work should use explicit era folders so fixes do not get mistaken as universal across all CLA/RPB variants. Do not add Cataclysm RPB folders unless a community RPB version appears.
+The current committed Worker examples are TBC `v1.6.0a` examples. New Vanilla, TBC, SOD, WOTLK, Cata, and MoP work should use explicit expansion folders so fixes do not get mistaken as universal across all CLA/RPB variants. Do not add Cataclysm RPB folders unless a community RPB version appears.
+
+## Unified n8n Flow
+
+Manual and automatic inputs should merge before any sheet mutation:
+
+```text
+Manual form
+WarcraftLogs group monitor
+  -> Normalize Report Request
+     expansion, reportId, source, requester, discoveredAt
+  -> Deduplicate by expansion + reportId
+  -> Acquire expansion queue lock
+  -> Acquire WarcraftLogs API lock
+  -> Run CLA
+     CLA setReportId
+     CLA runPasses
+  -> Run RPB only after CLA succeeds, when configured
+     RPB setReportId
+     RPB runFull
+  -> Release locks
+  -> Sheet-managed announcement
+```
+
+The Apps Script locks are still useful guardrails inside each sheet-bound project, but the canonical cross-sheet lock belongs in n8n because CLA and RPB cannot share Apps Script properties across separate projects.
 
 ## CLA Patch Flow
 
@@ -103,7 +147,7 @@ runPasses
   -> callback to n8n
 ```
 
-The CLA patch can suppress the sheet-level Discord webhook during final export so Discord or Cloudflare rate limits do not turn a completed export into a failed automation run.
+The CLA patch keeps the sheet-level Discord webhook enabled by default so the sheet-side announcement process runs during final export. It can still suppress the sheet webhook for a specific request with `options.suppressCoreDiscord=true` if a fallback run needs to mute announcements. In the unified lane, n8n should call CLA before RPB for a report ID.
 
 ## RPB Patch Flow
 
@@ -121,6 +165,8 @@ runFull
 
 RPB runs in a strict two-phase order. Phase 2 is skipped if Phase 1 fails.
 
+In the unified lane, RPB should not start until CLA has completed successfully for the same expansion and report ID. If an expansion has no known RPB sheet, the lane should complete after CLA and notify accordingly.
+
 ## Discord Delivery Options
 
 There are two supported approaches:
@@ -130,7 +176,23 @@ There are two supported approaches:
 | Source-level proxy parser | `Worker Proxy/examples/` | When preparing or applying a small CLA/RPB source change is acceptable. |
 | Patch-only wrapper/helper | `Automations/Shared_DiscordWebhook.gs` | When core source should remain untouched and export buttons can call wrapper functions. |
 
-For n8n-driven runs, the preferred approach is to let n8n own Discord notification and retry behavior.
+For n8n-driven runs, the preferred approach is to let the sheets own public announcements while n8n owns queueing, locks, retries, and callback handling.
+
+## Warcraft Logs API Wrapper
+
+The V2 Wrapper project is for source-level Warcraft Logs call migration. It differs from automation patches because the existing CLA/RPB source builds V1 REST URLs directly.
+
+```text
+Existing source
+  -> UrlFetchApp.fetch(V1 REST URL with api_key)
+
+Wrapper source
+  -> wclFetchFights_ / wclFetchTable_ / wclFetchEvents_
+     -> V1 REST when the credential slot contains an API key
+     -> V2 GraphQL when the credential slot contains client_id:client_secret
+```
+
+Replacement sets must be organized by expansion, tool, and upstream source version. Users should only install a set that exactly matches their sheet version.
 
 ## Constraints
 

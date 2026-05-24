@@ -33,7 +33,7 @@
  *     function names. Use the Apps Script "Select function" dropdown to verify.
  *
  * Uploaded to: Combat Log Analytics Apps Script project
- * Version: 0.3.0
+ * Version: 0.3.1
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -107,7 +107,7 @@ var CLA_LOCK_TIME_   = 'CLA_LOCK_TIME';      // ISO timestamp when lock was acqu
 var CLA_LOCK_TTL_MIN_ = 30;                  // minutes before a lock is considered stale
 var CLA_INSTR_SHEET_ = 'Instructions';        // sheet name containing E11
 var CLA_REPORT_CELL_ = 'E11';                 // cell the scripts read the report ID from
-var CLA_SUPPRESS_CORE_DISCORD_DEFAULT_ = true; // prevent Discord 429s from failing final export
+var CLA_SUPPRESS_CORE_DISCORD_DEFAULT_ = false; // keep sheet-managed announcements enabled by default
 
 
 // ── Entry Points ─────────────────────────────────────────────────────────────
@@ -269,7 +269,7 @@ function doGet(e) {
   return jsonResponse_({
     status: 'ok',
     project: 'CLA',
-    version: '0.3.0',
+    version: '0.3.1',
     spreadsheetId: ss ? ss.getId() : 'NOT BOUND',
     spreadsheetName: ss ? ss.getName() : 'NOT BOUND',
     message: 'CLA n8n patch is deployed. POST to trigger passes.',
@@ -449,8 +449,8 @@ function executeAction_(action, options, startTime) {
  * Discord webhook temporarily cleared. This keeps Discord/Cloudflare 429s from
  * causing a successful spreadsheet export to be reported as failed.
  *
- * Default: true for runCLA. Set options.suppressCoreDiscord=false to use the
- * upstream CLA Discord behavior.
+ * Default: false for runCLA. Set options.suppressCoreDiscord=true only when
+ * the sheet-managed announcement path should be muted for a specific run.
  *
  * @param {string} action
  * @param {Object} options
@@ -458,6 +458,7 @@ function executeAction_(action, options, startTime) {
  */
 function shouldSuppressCoreDiscord_(action, options) {
   if (action !== CLA_FINAL_STEP_) return false;
+  if (options && options.suppressCoreDiscord === true) return true;
   if (options && options.suppressCoreDiscord === false) return false;
   return CLA_SUPPRESS_CORE_DISCORD_DEFAULT_ === true;
 }
