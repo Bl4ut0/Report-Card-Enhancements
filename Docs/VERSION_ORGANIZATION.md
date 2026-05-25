@@ -1,6 +1,6 @@
 # Version Organization
 
-CLA and RPB are community-maintained Google Apps Script tools with different upstream maintainers across game eras. This repo adds local documentation, Worker proxy support, automation patches, and Warcraft Logs API wrapper scaffolding around those tools. It does not claim ownership of the upstream sheets.
+CLA and RPB are community-maintained Google Apps Script tools with different upstream maintainers across game eras. This repo adds local documentation, Worker proxy support, Warcraft Logs request-control scaffolding, automation patches, and Warcraft Logs API wrapper scaffolding around those tools. It does not claim ownership of the upstream sheets.
 
 For automation, the expansion is the organizing unit. Each expansion lane points at its configured CLA/RPB sheet pair, Web App URLs, WarcraftLogs group monitor, and notification target.
 
@@ -13,7 +13,7 @@ Community Discord: https://discord.gg/nGvt5zH
 | Era / Version Family | CLA Upstream Credit | RPB Upstream Credit | Repo Release State |
 |---|---|---|---|
 | Vanilla | @Shariva | @Shariva | Scaffold only; no committed version-specific patches/examples yet. |
-| TBC | @Shariva | @Shariva | Worker Proxy examples and V2 Wrapper scaffolds exist for CLA/RPB `v1.6.0a`; automation patches are still generic pre-1.0. |
+| TBC | @Shariva | @Shariva | Worker Proxy examples and V2 Wrapper scaffolds exist for CLA/RPB `v1.6.0a`; WCL Proxy scaffold exists as a shared project; automation patches are still generic pre-1.0. |
 | Season of Discovery (SOD) | Community, mainly @Tallia / @Pazrea | Community, mainly @Tallia / @Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
 | Wrath of the Lich King (WOTLK) | @Shariva | @Shariva | Scaffold only; no committed version-specific patches/examples yet. |
 | Cataclysm | Community CLA managed by @BZ, with substantial coding by @Salino | No known community RPB version | CLA scaffold only; no RPB path unless a community RPB appears. |
@@ -141,7 +141,7 @@ When adding a new era or upstream sheet version:
 2. Record whether CLA, RPB, or both exist for that expansion.
 3. Record the upstream version string exactly as shown in the sheet.
 4. Document any changed cell locations, function names, sheet names, export behavior, or Discord behavior.
-5. Update the matching component changelog when committed support changes: `Worker Proxy/docs/CHANGELOG.md`, `Automations/docs/CHANGELOG.md`, or `V2 Wrapper/docs/CHANGELOG.md`.
+5. Update the matching component changelog when committed support changes: `Worker Proxy/docs/CHANGELOG.md`, `WCL Proxy/docs/CHANGELOG.md`, `Automations/docs/CHANGELOG.md`, or `V2 Wrapper/docs/CHANGELOG.md`.
 
 ## Current Notes
 

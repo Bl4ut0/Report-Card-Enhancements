@@ -26,7 +26,16 @@
 |---|---|
 | Affects | n8n-triggered CLA/RPB runs |
 | Cause | Patch files do not pre-check WarcraftLogs API token quota. |
-| Mitigation | Add quota checks, retry/backoff, and a global API-key lock in n8n before calling Apps Script actions. |
+| Mitigation | Add quota checks, retry/backoff, and a global API-key lock in n8n before calling Apps Script actions. Use WCL Proxy for bounded request retries and future request pacing. |
+| Status | Open |
+
+### Warcraft Logs upstream 429/502 pressure
+
+| Field | Value |
+|---|---|
+| Affects | CLA/RPB source runs that call Warcraft Logs directly |
+| Cause | Bursty direct Apps Script fetches can trigger Warcraft Logs rate limits or transient upstream gateway errors. |
+| Mitigation | Route source-level Warcraft Logs calls through WCL Proxy and V2 Wrapper helpers; respect `Retry-After`; serialize report work in n8n. |
 | Status | Open |
 
 ### Existing n8n workflows are split by intake path
@@ -55,4 +64,5 @@
 | Question | Current Recommendation |
 |---|---|
 | Should WarcraftLogs quota checks live in Apps Script or n8n? | n8n, because it owns queueing, retry decisions, and the global API-key lock. |
+| Should Warcraft Logs API calls use a proxy? | Use WCL Proxy as a pacing/retry layer when direct Apps Script calls hit 429/502 pressure; do not use it as a limit bypass. |
 | Should Discord notifications live in Apps Script or n8n? | Apps Script / sheet-side export flow owns public announcements; n8n owns orchestration and callbacks. |

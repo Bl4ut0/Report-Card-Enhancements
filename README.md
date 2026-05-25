@@ -1,10 +1,11 @@
 # CLA + RPB Report Card Enhancements
 
-Helper scripts, Cloudflare Worker proxy support, and n8n automation patches for Combat Log Analytics (CLA) and Role Performance Breakdown (RPB).
+Helper scripts, Cloudflare Worker proxy support, Warcraft Logs API request-control scaffolding, and n8n automation patches for Combat Log Analytics (CLA) and Role Performance Breakdown (RPB).
 
-This repo is organized around three committed enhancement projects plus shared documentation:
+This repo is organized around four committed enhancement projects plus shared documentation:
 
 - `Worker Proxy/` contains the Cloudflare Worker relay and source-level examples for Discord webhook delivery.
+- `WCL Proxy/` contains the Warcraft Logs API proxy scaffold for controlled egress, retries, and future request pacing.
 - `Automations/` contains Apps Script patch files and n8n support files.
 - `V2 Wrapper/` contains Warcraft Logs V1/V2 compatibility wrapper scaffolding and version-specific replacement sets.
 - `Docs/` contains repo-level context and cross-cutting notes.
@@ -14,6 +15,7 @@ This repo is organized around three committed enhancement projects plus shared d
 | Folder | Purpose |
 |---|---|
 | `Worker Proxy/` | Cloudflare Worker relay plus CLA/RPB example files with proxy support applied. |
+| `WCL Proxy/` | Warcraft Logs API proxy scaffold for retry, backoff, allowlisting, and future queueing. |
 | `Automations/` | Apps Script patch files and n8n compose example/setup docs. |
 | `V2 Wrapper/` | Warcraft Logs API compatibility wrapper and expansion/version-specific replacement structure. |
 | `Docs/` | Project architecture, setup notes, patch registry, and troubleshooting. |
@@ -34,6 +36,13 @@ For Discord webhook proxy support, start here:
 ```text
 Worker Proxy/README.md
 Worker Proxy/docs/CHANGELOG.md
+```
+
+For Warcraft Logs request-control proxy work, start here:
+
+```text
+WCL Proxy/README.md
+WCL Proxy/docs/RATE_LIMITING.md
 ```
 
 For n8n automation patch work, start here:
@@ -67,6 +76,8 @@ n8n owns orchestration only: intake, queueing, locks, callbacks, and retry decis
 
 Patch files are designed to be uploaded beside the live Apps Script files. They should extend behavior without editing the upstream core logic. When source-level examples are needed, use the committed examples under `Worker Proxy/examples/`.
 
+WCL Proxy files are for controlled Warcraft Logs API egress. They should pace and retry requests, not bypass Warcraft Logs limits.
+
 V2 Wrapper replacement files are different from generic patches: they are version-specific source replacements or direct source changes needed to route Warcraft Logs calls through the compatibility layer. Users should only install a replacement set that matches their exact expansion, tool, and upstream form/source version.
 
 Do not commit real Web App URLs, Discord webhooks, WarcraftLogs API keys, OAuth client secrets, Cloudflare secrets, or n8n secrets.
@@ -82,7 +93,7 @@ Community Discord: https://discord.gg/nGvt5zH
 | Version / Era | CLA Upstream Credit | RPB Upstream Credit | Repo Release State |
 |---|---|---|---|
 | Vanilla | @Shariva | @Shariva | Scaffold only; no committed version-specific patches/examples yet. |
-| TBC | @Shariva | @Shariva | Worker Proxy examples committed for CLA/RPB `v1.6.0a`; V2 Wrapper scaffolds exist for CLA/RPB `v1.6.0a`; automation patches are still generic pre-1.0. |
+| TBC | @Shariva | @Shariva | Worker Proxy examples committed for CLA/RPB `v1.6.0a`; V2 Wrapper and WCL Proxy scaffolds exist; automation patches are still generic pre-1.0. |
 | Season of Discovery | Community, mainly @Tallia / @Pazrea | Community, mainly @Tallia / @Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
 | Wrath of the Lich King | @Shariva | @Shariva | Scaffold only; no committed version-specific patches/examples yet. |
 | Cataclysm | Community CLA managed by @BZ, with substantial coding by @Salino | No known community RPB version | CLA scaffold only; no RPB path unless a community RPB appears. |

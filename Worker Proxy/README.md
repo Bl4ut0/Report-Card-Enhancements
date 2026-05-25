@@ -2,6 +2,8 @@
 
 Cloudflare Worker proxy support for CLA and RPB Discord webhook delivery.
 
+For Warcraft Logs API request pacing and retry work, use the separate `WCL Proxy/` project. This folder is intentionally Discord-only.
+
 Opening version: `1.0.0`.
 
 The upstream CLA/RPB sheets are community-maintained and vary by game era; this Worker is only a Discord delivery enhancement around those sheets.

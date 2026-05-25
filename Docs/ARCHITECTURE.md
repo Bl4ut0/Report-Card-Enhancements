@@ -2,11 +2,11 @@
 
 ## System Boundaries
 
-CLA and RPB are separate Google Sheet based Apps Script tools. This repo adds automation, delivery, and Warcraft Logs API compatibility support around them without claiming ownership of upstream core logic.
+CLA and RPB are separate Google Sheet based Apps Script tools. This repo adds automation, delivery, Warcraft Logs request-control, and Warcraft Logs API compatibility support around them without claiming ownership of upstream core logic.
 
 The automation runtime is organized by expansion. Each expansion lane owns the configured CLA/RPB sheet pair, Web App URLs, queue state, and WarcraftLogs API pacing for that expansion. Manual submissions and automatic WarcraftLogs group monitoring feed the same lane.
 
-The upstream CLA/RPB sheets are community-maintained and vary by game era. This repo owns only the enhancement layer: documentation, Worker proxy support, automation patches, and Warcraft Logs API wrapper scaffolding. See `Docs/VERSION_ORGANIZATION.md` for expansion-specific credits and support status.
+The upstream CLA/RPB sheets are community-maintained and vary by game era. This repo owns only the enhancement layer: documentation, Worker proxy support, Warcraft Logs request-control scaffolding, automation patches, and Warcraft Logs API wrapper scaffolding. See `Docs/VERSION_ORGANIZATION.md` for expansion-specific credits and support status.
 
 | Boundary | CLA | RPB |
 |---|---|---|
@@ -34,6 +34,9 @@ Committed layers:
 ```text
 Worker Proxy/
   Cloudflare Worker relay, source-level examples, and Worker-specific docs.
+
+WCL Proxy/
+  Warcraft Logs API proxy scaffold for controlled egress, retries, backoff, and future request pacing.
 
 Automations/
   Patch-only Apps Script files, setup docs, and patch changelog.
@@ -194,11 +197,27 @@ Wrapper source
 
 Replacement sets must be organized by expansion, tool, and upstream source version. Users should only install a set that exactly matches their sheet version.
 
+## Warcraft Logs Proxy
+
+The WCL Proxy project is for controlled upstream Warcraft Logs API egress. It should be treated as a reliability and pacing layer, not a limit bypass.
+
+```text
+CLA/RPB source or V2 Wrapper
+  -> WCL Proxy Worker
+     -> allowlisted Warcraft Logs API URL
+     -> bounded retries for 429/502/503/504
+     -> Retry-After-aware backoff
+     -> optional safe GET cache
+```
+
+The current scaffold does not serialize requests by itself. If 429/502 pressure continues, the next design step is a Durable Object queue keyed by credential, expansion, or report code.
+
 ## Constraints
 
 | Constraint | Impact |
 |---|---|
 | Apps Script execution time limit | Large logs may need split passes rather than one full run. |
+| Warcraft Logs rate limiting | Centralize pacing in n8n and WCL Proxy; honor upstream `Retry-After` values. |
 | Web App deployment versions | Code edits require a new deployment version before they are live. |
 | Flat global namespace | Patch names must avoid collisions with core functions. |
 | Web App URL secrecy | Treat deployment URLs like credentials. |
