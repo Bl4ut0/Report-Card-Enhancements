@@ -534,7 +534,7 @@ function wclParseV1Url_(url) {
     var pairs = queryString.split('&');
     for (var i = 0; i < pairs.length; i++) {
       var pair = pairs[i].split('=');
-      var key = decodeURIComponent(pair[0]);
+      var key = decodeURIComponent(pair[0]).toLowerCase();
       var value = pair.length > 1 ? decodeURIComponent(pair[1]) : '';
       params[key] = value;
     }
@@ -546,6 +546,53 @@ function wclParseV1Url_(url) {
     parts: parts,
     params: params
   };
+}
+
+function wclBuildFilterExpression_(params) {
+  var parts = [];
+  
+  if (params.filter) {
+    parts.push(params.filter);
+  }
+  
+  if (params.sourceauraspresent) {
+    var auras = params.sourceauraspresent.split(',');
+    for (var i = 0; i < auras.length; i++) {
+      parts.push('source.buff.' + auras[i].trim());
+    }
+  }
+  
+  if (params.sourceaurasabsent) {
+    var auras = params.sourceaurasabsent.split(',');
+    for (var i = 0; i < auras.length; i++) {
+      parts.push('not source.buff.' + auras[i].trim());
+    }
+  }
+  
+  if (params.targetauraspresent) {
+    var auras = params.targetauraspresent.split(',');
+    for (var i = 0; i < auras.length; i++) {
+      parts.push('(target.buff.' + auras[i].trim() + ' or target.debuff.' + auras[i].trim() + ')');
+    }
+  }
+  
+  if (params.targetaurasabsent) {
+    var auras = params.targetaurasabsent.split(',');
+    for (var i = 0; i < auras.length; i++) {
+      parts.push('not (target.buff.' + auras[i].trim() + ' or target.debuff.' + auras[i].trim() + ')');
+    }
+  }
+  
+  if (params.targetclass) {
+    var cls = params.targetclass.toLowerCase();
+    if (cls === 'player') {
+      parts.push('target.type = "player"');
+    } else {
+      parts.push('target.class = "' + params.targetclass + '"');
+    }
+  }
+  
+  return parts.length > 0 ? parts.join(' and ') : undefined;
 }
 
 function wclTranslateV1UrlToV2GraphQL_(url, auth) {
@@ -575,8 +622,10 @@ function wclTranslateV1UrlToV2GraphQL_(url, auth) {
       if (params.targetid !== undefined) options.targetid = Number(params.targetid);
       if (params.encounter !== undefined) options.encounter = Number(params.encounter);
       if (params.hostility !== undefined) options.hostility = Number(params.hostility);
-      if (params.filter !== undefined) options.filterExpression = params.filter;
       if (params.translate !== undefined) options.translate = (params.translate === 'true' || params.translate === true);
+      
+      var filter = wclBuildFilterExpression_(params);
+      if (filter !== undefined) options.filterExpression = filter;
       
       return wclV2FetchTable_(auth, reportCode, dataType, options);
     }
@@ -593,8 +642,10 @@ function wclTranslateV1UrlToV2GraphQL_(url, auth) {
       if (params.targetid !== undefined) options.targetid = Number(params.targetid);
       if (params.hostility !== undefined) options.hostility = Number(params.hostility);
       if (params.limit !== undefined) options.limit = Number(params.limit);
-      if (params.filter !== undefined) options.filterExpression = params.filter;
-      if (params.nextPageTimestamp !== undefined) options.nextPageTimestamp = Number(params.nextPageTimestamp);
+      if (params.nextpagetimestamp !== undefined) options.nextPageTimestamp = Number(params.nextpagetimestamp);
+      
+      var filter = wclBuildFilterExpression_(params);
+      if (filter !== undefined) options.filterExpression = filter;
       
       return wclV2FetchEvents_(auth, reportCode, dataType, options);
     }
