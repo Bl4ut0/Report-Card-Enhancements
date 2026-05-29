@@ -273,7 +273,7 @@ function wclV2FetchFights_(auth, reportCode, options) {
     '        id' +
     '        startTime' +
     '        endTime' +
-    '        boss' +
+    '        encounterID' +
     '        kill' +
     '        name' +
     '        originalEncounterID' +
@@ -435,8 +435,8 @@ function wclV2MapFightsToV1_(graphqlReport) {
         id: f.id,
         start_time: f.startTime,
         end_time: f.endTime,
-        boss: f.boss || 0,
-        originalBoss: f.originalEncounterID || f.boss || 0,
+        boss: f.encounterID || 0,
+        originalBoss: f.originalEncounterID || f.encounterID || 0,
         kill: f.kill || false,
         name: f.name || '',
         fightPercentage: f.fightPercentage || 0,
