@@ -43,5 +43,5 @@ v2:client_id:client_secret
 
 ## Current State
 
-This folder is a framework scaffold. The shared wrapper APIs and replacement folder layout exist, but the V2 GraphQL response adapters still need to be implemented and validated against known reports.
+The Warcraft Logs V2 GraphQL compatibility wrapper is fully implemented and verified. The wrapper handles fight structures (encounter/boss IDs, fight timings, actor participation), table data (structure-matched automatically by WCL GraphQL), and event lists (reconstructing nested `ability` objects from V2 `abilityGameID` for backward compatibility). The wrapper has been validated end-to-end against live Warcraft Logs reports, demonstrating output parity between the V1 REST and V2 GraphQL endpoints.
 

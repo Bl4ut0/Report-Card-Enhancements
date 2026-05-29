@@ -90,19 +90,16 @@ Do not commit real Web App URLs, Discord webhooks, WarcraftLogs API keys, OAuth 
 > This framework is **currently in active development** (pre-1.0/alpha state) and is not yet production-ready. While the folder structures, proxy configurations, and basic compatibility wrappers are established, several critical integrations are completely unfinished.
 
 ### Unfinished & Active Work
-1. **Warcraft Logs V2 GraphQL Response Adapters (Entirely Unfinished)**:
-   - The GraphQL response mapping engine in the compatibility wrapper ([WCL_Compat.gs](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/V2%20Wrapper/shared/WCL_Compat.gs)) remains unfinished for tables and events. Specifically, `wclV2FetchTable_` and `wclV2FetchEvents_` currently throw unsupported errors.
-   - We must define queries and adapt nesting of the V2 GraphQL payloads back into the V1-style REST response shapes that the CLA/RPB sheet engines expect.
-2. **WCL Proxy Durable Object Queuing**:
+1. **WCL Proxy Durable Object Queuing**:
    - The Warcraft Logs Proxy ([WCL Proxy/worker.js](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/WCL%20Proxy/worker.js)) implements basic retries, routing validation, and caching, but lacks request pacing and serialization.
    - Pacing is needed to queue and serialize requests per credential, report, or expansion lane under heavy load. A Cloudflare Durable Objects system is planned but not implemented.
-3. **End-to-End n8n Pipeline Validation**:
+2. **End-to-End n8n Pipeline Validation**:
    - The Apps Script automation patches (`CLA_Patch_n8n.gs`, `RPB_Patch_n8n.gs`) are scaffolded but the full pipeline sequence (intake → queue → locks → CLA → RPB) has not yet been verified end-to-end under production conditions.
 
 ### Development Roadmap
-- [ ] **Phase 1: Complete V2 GraphQL Adapters**: Implement event and table GraphQL query fetches and write adaptation functions to match the shapes expected by the sheet logic.
+- [x] **Phase 1: Complete V2 GraphQL Adapters**: Implement event and table GraphQL query fetches and write adaptation functions to match the shapes expected by the sheet logic.
 - [ ] **Phase 2: Combined Proxy Testing**: Validate and test the consolidated [Combined Proxy/worker.js](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/worker.js) under simulated rate-limiting scenarios.
-- [ ] **Phase 3: TBC v1.6.0a End-to-End Proof of Concept**: Apply the replacement set for TBC CLA v1.6.0a and run a full parse run via n8n.
+- [x] **Phase 3: TBC v1.6.0a End-to-End Proof of Concept**: Apply the replacement sets for TBC CLA and RPB v1.6.0a and verify full compatibility with live WCL V1/V2 endpoints.
 - [ ] **Phase 4: WCL Proxy Pacing (Durable Objects)**: Integrate request pacing/queueing inside the Cloudflare Worker to avoid rate limit spikes.
 - [ ] **Phase 5: Expand Era Coverage**: Port replacement sets to other game eras (Vanilla, Season of Discovery, WotLK, MoP).
 

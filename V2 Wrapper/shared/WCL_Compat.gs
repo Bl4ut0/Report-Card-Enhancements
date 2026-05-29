@@ -333,14 +333,14 @@ function wclV2FetchTable_(auth, reportCode, dataType, options) {
     return { entries: [] };
   }
   
-  return rawResponse.data.reportData.report.table;
+  return rawResponse.data.reportData.report.table.data || rawResponse.data.reportData.report.table;
 }
 
 function wclV2FetchEvents_(auth, reportCode, dataType, options) {
-  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: EventDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $hostilityType: HostilityType, $limit: Int, $nextPageTimestamp: Float, $filterExpression: String) {' +
+  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: EventDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $hostilityType: HostilityType, $limit: Int, $filterExpression: String) {' +
     '  reportData {' +
     '    report(code: $code) {' +
-    '      events(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, hostilityType: $hostilityType, limit: $limit, nextPageTimestamp: $nextPageTimestamp, filterExpression: $filterExpression) {' +
+    '      events(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, hostilityType: $hostilityType, limit: $limit, filterExpression: $filterExpression) {' +
     '        data' +
     '        nextPageTimestamp' +
     '      }' +
@@ -358,7 +358,6 @@ function wclV2FetchEvents_(auth, reportCode, dataType, options) {
     targetID: options.targetid !== undefined ? Number(options.targetid) : undefined,
     hostilityType: options.hostility !== undefined ? (options.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
     limit: options.limit !== undefined ? Number(options.limit) : 10000,
-    nextPageTimestamp: options.nextPageTimestamp !== undefined ? Number(options.nextPageTimestamp) : undefined,
     filterExpression: options.filterExpression !== undefined ? options.filterExpression : undefined
   };
   
@@ -369,8 +368,20 @@ function wclV2FetchEvents_(auth, reportCode, dataType, options) {
   }
   
   var eventsData = rawResponse.data.reportData.report.events;
+  var eventsList = eventsData.data || [];
+  for (var i = 0; i < eventsList.length; i++) {
+    var ev = eventsList[i];
+    if (ev.abilityGameID !== undefined && ev.ability === undefined) {
+      ev.ability = {
+        name: '',
+        guid: ev.abilityGameID,
+        type: 0,
+        abilityIcon: ''
+      };
+    }
+  }
   return {
-    events: eventsData.data || [],
+    events: eventsList,
     nextPageTimestamp: eventsData.nextPageTimestamp
   };
 }
@@ -388,6 +399,8 @@ function wclV2GetTableDataType_(v1DataType) {
     'healing': 'Healing',
     'interrupts': 'Interrupts',
     'resources': 'Resources',
+    'resources-gains': 'Resources',
+    'resources-losses': 'Resources',
     'summons': 'Summons',
     'survivability': 'Survivability',
     'threat': 'Threat'
@@ -437,7 +450,7 @@ function wclV2MapFightsToV1_(graphqlReport) {
         end_time: f.endTime,
         boss: f.encounterID || 0,
         originalBoss: f.originalEncounterID || f.encounterID || 0,
-        kill: f.kill || false,
+        kill: (f.encounterID && f.encounterID > 0) ? (f.kill || false) : undefined,
         name: f.name || '',
         fightPercentage: f.fightPercentage || 0,
         bossPercentage: f.bossPercentage || 0
