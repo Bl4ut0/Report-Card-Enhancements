@@ -674,7 +674,7 @@ function getRaidStartAndEnd(allFightsData, ss, queryEnemy) {
             }
           } else if ((raidZoneFound == karaZoneID && karaStartPoint.indexOf(enemy.guid) > -1) || (raidZoneFound == sscStartPoint && sscStartPoint.indexOf(enemy.guid) > -1) || (raidZoneFound == tkZoneID && tkStartPoint.indexOf(enemy.guid) > -1) || (raidZoneFound == mhZoneID && mhStartPoint.indexOf(enemy.guid) > -1) || (raidZoneFound == btZoneID && btStartPoint.indexOf(enemy.guid) > -1) || (raidZoneFound == zaZoneID && zaStartPoint.indexOf(enemy.guid) > -1) || (raidZoneFound == swZoneID && swStartPoint.indexOf(enemy.guid) > -1)) {
             if (queryEnemyFilled) {
-              var queryEnemyData = JSON.parse(UrlFetchApp.fetch(queryEnemy + enemy.id.toString() + "&start=" + fight.start_time.toString() + "&end=" + (fight.start_time + maxMillisecondsInfight).toString()));
+              var queryEnemyData = wclV1Fetch_(queryEnemy + enemy.id.toString() + "&start=" + fight.start_time.toString() + "&end=" + (fight.start_time + maxMillisecondsInfight).toString(), { method: "GET" });
               if (queryEnemyData != null && queryEnemyData.events != null && queryEnemyData.events.length > 0)
                 startPointFoundStart = true;
               else
