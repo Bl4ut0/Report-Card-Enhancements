@@ -324,7 +324,7 @@ function wclV2FetchTable_(auth, reportCode, dataType, options) {
     abilityID: options.abilityid !== undefined ? Number(options.abilityid) : undefined,
     sourceID: options.sourceid !== undefined ? Number(options.sourceid) : undefined,
     targetID: options.targetid !== undefined ? Number(options.targetid) : undefined,
-    encounterID: options.encounter !== undefined ? Number(options.encounter) : undefined,
+    encounterID: (options.encounter !== undefined && Number(options.encounter) > 0) ? Number(options.encounter) : undefined,
     hostilityType: options.hostility !== undefined ? (options.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
     filterExpression: options.filterExpression !== undefined ? options.filterExpression : undefined
   };
@@ -555,6 +555,19 @@ function wclBuildFilterExpression_(params) {
     parts.push(params.filter);
   }
   
+  if (params.encounter !== undefined) {
+    var encounterVal = Number(params.encounter);
+    if (!isNaN(encounterVal)) {
+      if (encounterVal === 0) {
+        parts.push('encounter = 0');
+      } else if (encounterVal === -2) {
+        parts.push('encounter != 0');
+      } else if (encounterVal > 0) {
+        parts.push('encounter = ' + encounterVal);
+      }
+    }
+  }
+  
   if (params.sourceauraspresent) {
     var auras = params.sourceauraspresent.split(',');
     for (var i = 0; i < auras.length; i++) {
@@ -647,6 +660,7 @@ function wclTranslateV1UrlToV2GraphQL_(url, auth) {
       if (params.abilityid !== undefined) options.abilityid = Number(params.abilityid);
       if (params.sourceid !== undefined) options.sourceid = Number(params.sourceid);
       if (params.targetid !== undefined) options.targetid = Number(params.targetid);
+      if (params.encounter !== undefined) options.encounter = Number(params.encounter);
       if (params.hostility !== undefined) options.hostility = Number(params.hostility);
       if (params.limit !== undefined) options.limit = Number(params.limit);
       if (params.nextpagetimestamp !== undefined) options.nextPageTimestamp = Number(params.nextpagetimestamp);
