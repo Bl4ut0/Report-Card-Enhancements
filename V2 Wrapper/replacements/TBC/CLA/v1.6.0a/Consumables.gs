@@ -303,17 +303,32 @@ function populateBuffConsumables() {
                           bossIdsFound.push(fight.id);
                           try {
                             if (((spellIdStyles[spellIdsColumnCount][spellIdsCellCount] == "italic") && !(buffData.guid.toString() == "17539" && playerByNameAsc.type == "Paladin") && !(buffData.guid.toString() == "24799" && (playerByNameAsc.type == "Rogue" || playerByNameAsc.type == "Warrior"))) || (buffData.guid.toString() == "33721" && playerByNameAsc.type != "Mage" && playerByNameAsc.type != "Paladin" && playerByNameAsc.type != "Druid" && playerByNameAsc.type != "Shaman") || ((buffData.guid.toString() == "11406" || buffData.guid.toString() == "28497" || buffData.guid.toString() == "43764" || buffData.guid.toString() == "28520" || buffData.guid.toString() == "41606" || buffData.guid.toString() == "11374") && playerByNameAsc.type != "Rogue" && playerByNameAsc.type != "Druid" && playerByNameAsc.type != "Warrior" && playerByNameAsc.type != "Shaman" && playerByNameAsc.type != "Hunter" && playerByNameAsc.type != "Paladin") || ((buffData.guid.toString() == "28491" || buffData.guid.toString() == "33268" || buffData.guid.toString() == "17627") && playerByNameAsc.type != "Druid" && playerByNameAsc.type != "Priest" && playerByNameAsc.type != "Paladin" && playerByNameAsc.type != "Shaman") || (buffData.guid.toString() == "28493" && playerByNameAsc.type != "Mage") || ((buffData.guid.toString() == "28501" || buffData.guid.toString() == "43722") && playerByNameAsc.type != "Mage" && playerByNameAsc.type != "Warlock") || (buffData.guid.toString() == "28503" && playerByNameAsc.type != "Warlock" && playerByNameAsc.type != "Priest") || ((buffData.guid.toString() == "33726" || buffData.guid.toString() == "28502" || buffData.guid.toString() == "28518" || buffData.guid.toString() == "41607") && playerByNameAsc.type != "Druid" && playerByNameAsc.type != "Paladin" && playerByNameAsc.type != "Warrior") || ((buffData.guid.toString() == "28521" || buffData.guid.toString() == "46840") && playerByNameAsc.type != "Druid" && playerByNameAsc.type != "Paladin" && playerByNameAsc.type != "Mage" && playerByNameAsc.type != "Shaman") || ((buffData.guid.toString() == "28540" || buffData.guid.toString() == "46838") && playerByNameAsc.type != "Priest" && playerByNameAsc.type != "Warlock" && playerByNameAsc.type != "Mage") || (buffData.guid.toString() == "28509" && (playerByNameAsc.type == "Rogue" || playerByNameAsc.type == "Warrior" || playerByNameAsc.type == "Mage" || playerByNameAsc.type == "Warlock")) || ((buffData.guid.toString() == "39627" || buffData.guid.toString() == "33263" || buffData.guid.toString() == "33265") && (playerByNameAsc.type == "Rogue" || playerByNameAsc.type == "Warrior" || playerByNameAsc.type == "Hunter")) || ((buffData.guid.toString() == "33256" || buffData.guid.toString() == "44106" || buffData.guid.toString() == "40323") && playerByNameAsc.type != "Shaman" && playerByNameAsc.type != "Paladin" && playerByNameAsc.type != "Warrior") || (buffData.guid.toString() == "33261" && playerByNameAsc.type != "Druid" && playerByNameAsc.type != "Hunter" && playerByNameAsc.type != "Rogue") || ((buffData.guid.toString() == "39628") && playerByNameAsc.type != "Druid") || (buffData.guid.toString() == "17538" && playerByNameAsc.type != "Warrior" && playerByNameAsc.type != "Hunter" && playerByNameAsc.type != "Rogue")) {
-                          isPlayerACheapass = true;
-                          if (suboptimalStuffFound.indexOf(buffData.name) < 0) {
-                            if (headerValue == getStringForLang("foodBuff", langKeys, langTrans, "", "", "", "")) {
-                              if (badBuffFoodFound.indexOf(buffData.guid.toString()) < 0) {
-                                badBuffFoodFound.push(buffData.guid.toString());
-                                wellFedName = buffData.name;
+                            isPlayerACheapass = true;
+                            if (suboptimalStuffFound.indexOf(buffData.name) < 0) {
+                              if (headerValue == getStringForLang("foodBuff", langKeys, langTrans, "", "", "", "")) {
+                                if (badBuffFoodFound.indexOf(buffData.guid.toString()) < 0) {
+                                  badBuffFoodFound.push(buffData.guid.toString());
+                                  wellFedName = buffData.name;
+                                }
+                              } else {
+                                suboptimalStuffFound += buffData.name + ", ";
                               }
-                            } else {
-                              suboptimalStuffFound += buffData.name + ", ";
                             }
                           }
+                        } catch { }
+                        if (headerValue == getStringForLang("battleElixir", langKeys, langTrans, "", "", "", "") || headerValue == getStringForLang("guardianElixir", langKeys, langTrans, "", "", "", ""))
+                          bossCovered.push(fight.id);
+                      }
+                    }
+                    var name = spellIdsCell.toString().split(" [")[1];
+                      if (name != null && name.length > 0 && name.indexOf("*") > -1) {
+                        if (names.indexOf(getStringForLang(name.replace("]", "").replace("*", ""), langKeys, langTrans, "", "", "", "") + "*") < 0) {
+                          names += getStringForLang(name.replace("]", "").replace("*", ""), langKeys, langTrans, "", "", "", "") + "*,";
+                        }
+                      }
+                      else if (name != null && name.length > 0) {
+                        if (names.indexOf(getStringForLang(name.replace("]", ""), langKeys, langTrans, "", "", "", "")) < 0) {
+                          names += getStringForLang(name.replace("]", ""), langKeys, langTrans, "", "", "", "") + ",";
                         }
                       }
                     })
