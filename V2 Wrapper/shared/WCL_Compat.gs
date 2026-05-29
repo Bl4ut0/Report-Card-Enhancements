@@ -69,6 +69,19 @@ function wclUnsupported_(message) {
  */
 function wclFetchInternal_(url, options, errorPrefix) {
   options = options || {};
+  
+  // Extract credentials from URL if it's a Warcraft Logs URL
+  var isWclUrl = url.indexOf('warcraftlogs.com') > -1;
+  if (isWclUrl) {
+    var apiKeyMatch = url.match(/(?:\?|&)api_key=([^&]+)/);
+    if (apiKeyMatch) {
+      var auth = wclGetCredentialMode_(decodeURIComponent(apiKeyMatch[1]));
+      if (auth.mode == 'v2') {
+        return wclTranslateV1UrlToV2GraphQL_(url, auth);
+      }
+    }
+  }
+
   var props = PropertiesService.getScriptProperties();
   var workerUrl = props.getProperty('WCL_PROXY_WORKER_URL');
   var proxySecret = props.getProperty('WCL_PROXY_SECRET');
@@ -254,6 +267,7 @@ function wclV2FetchFights_(auth, reportCode, options) {
     '    report(code: $code) {' +
     '      title' +
     '      startTime' +
+    '      endTime' +
     '      zone { id name }' +
     '      fights {' +
     '        id' +
@@ -261,14 +275,22 @@ function wclV2FetchFights_(auth, reportCode, options) {
     '        endTime' +
     '        boss' +
     '        kill' +
-    '        zoneID' +
-    '        zoneName' +
+    '        name' +
+    '        originalEncounterID' +
+    '        fightPercentage' +
+    '        bossPercentage' +
+    '        friendlyPlayers' +
+    '        enemyNPCs { id gameID }' +
+    '        friendlyPets { id gameID }' +
     '      }' +
     '      masterData {' +
-    '        actors(type: "NPC") {' +
+    '        actors {' +
     '          id' +
     '          gameID' +
     '          name' +
+    '          type' +
+    '          subType' +
+    '          petOwner' +
     '        }' +
     '      }' +
     '    }' +
@@ -278,13 +300,289 @@ function wclV2FetchFights_(auth, reportCode, options) {
   var variables = { code: reportCode };
   var rawResponse = wclV2GraphQLQuery_(auth, query, variables);
   
-  return rawResponse;
+  if (!rawResponse || !rawResponse.data || !rawResponse.data.reportData || !rawResponse.data.reportData.report) {
+    throw new Error('[WCL V2 Wrapper] Failed to fetch report fights for ' + reportCode);
+  }
+  
+  return wclV2MapFightsToV1_(rawResponse.data.reportData.report);
 }
 
 function wclV2FetchTable_(auth, reportCode, dataType, options) {
-  wclUnsupported_('V2 table wrapper GraphQL schema selection is not implemented yet.');
+  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int) {' +
+    '  reportData {' +
+    '    report(code: $code) {' +
+    '      table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID)' +
+    '    }' +
+    '  }' +
+    '}';
+    
+  var variables = {
+    code: reportCode,
+    startTime: options.start !== undefined ? Number(options.start) : 0,
+    endTime: options.end !== undefined ? Number(options.end) : 999999999999,
+    dataType: wclV2GetTableDataType_(dataType),
+    abilityID: options.abilityid !== undefined ? Number(options.abilityid) : undefined,
+    sourceID: options.sourceid !== undefined ? Number(options.sourceid) : undefined,
+    targetID: options.targetid !== undefined ? Number(options.targetid) : undefined,
+    encounterID: options.encounter !== undefined ? Number(options.encounter) : undefined
+  };
+  
+  var rawResponse = wclV2GraphQLQuery_(auth, query, variables);
+  
+  if (!rawResponse || !rawResponse.data || !rawResponse.data.reportData || !rawResponse.data.reportData.report || !rawResponse.data.reportData.report.table) {
+    return { entries: [] };
+  }
+  
+  return rawResponse.data.reportData.report.table;
 }
 
 function wclV2FetchEvents_(auth, reportCode, dataType, options) {
-  wclUnsupported_('V2 events wrapper GraphQL schema selection is not implemented yet.');
+  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: EventDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $hostilityType: HostilityType, $limit: Int, $nextPageTimestamp: Float, $filterExpression: String) {' +
+    '  reportData {' +
+    '    report(code: $code) {' +
+    '      events(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, hostilityType: $hostilityType, limit: $limit, nextPageTimestamp: $nextPageTimestamp, filterExpression: $filterExpression) {' +
+    '        data' +
+    '        nextPageTimestamp' +
+    '      }' +
+    '    }' +
+    '  }' +
+    '}';
+    
+  var variables = {
+    code: reportCode,
+    startTime: options.start !== undefined ? Number(options.start) : 0,
+    endTime: options.end !== undefined ? Number(options.end) : 999999999999,
+    dataType: wclV2GetEventDataType_(dataType),
+    abilityID: options.abilityid !== undefined ? Number(options.abilityid) : undefined,
+    sourceID: options.sourceid !== undefined ? Number(options.sourceid) : undefined,
+    targetID: options.targetid !== undefined ? Number(options.targetid) : undefined,
+    hostilityType: options.hostility !== undefined ? (options.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
+    limit: options.limit !== undefined ? Number(options.limit) : 10000,
+    nextPageTimestamp: options.nextPageTimestamp !== undefined ? Number(options.nextPageTimestamp) : undefined,
+    filterExpression: options.filterExpression !== undefined ? options.filterExpression : undefined
+  };
+  
+  var rawResponse = wclV2GraphQLQuery_(auth, query, variables);
+  
+  if (!rawResponse || !rawResponse.data || !rawResponse.data.reportData || !rawResponse.data.reportData.report || !rawResponse.data.reportData.report.events) {
+    return { events: [], nextPageTimestamp: null };
+  }
+  
+  var eventsData = rawResponse.data.reportData.report.events;
+  return {
+    events: eventsData.data || [],
+    nextPageTimestamp: eventsData.nextPageTimestamp
+  };
+}
+
+function wclV2GetTableDataType_(v1DataType) {
+  var mapping = {
+    'summary': 'Summary',
+    'buffs': 'Buffs',
+    'casts': 'Casts',
+    'damage-done': 'DamageDone',
+    'damage-taken': 'DamageTaken',
+    'deaths': 'Deaths',
+    'debuffs': 'Debuffs',
+    'dispels': 'Dispels',
+    'healing': 'Healing',
+    'interrupts': 'Interrupts',
+    'resources': 'Resources',
+    'summons': 'Summons',
+    'survivability': 'Survivability',
+    'threat': 'Threat'
+  };
+  var lower = (v1DataType || '').toString().toLowerCase();
+  return mapping[lower] || 'Casts';
+}
+
+function wclV2GetEventDataType_(v1DataType) {
+  var mapping = {
+    'summary': 'All',
+    'buffs': 'Buffs',
+    'casts': 'Casts',
+    'combatantinfo': 'CombatantInfo',
+    'damage-done': 'DamageDone',
+    'damage-taken': 'DamageTaken',
+    'deaths': 'Deaths',
+    'debuffs': 'Debuffs',
+    'dispels': 'Dispels',
+    'healing': 'Healing',
+    'interrupts': 'Interrupts',
+    'resources': 'Resources',
+    'summons': 'Summons',
+    'threat': 'Threat'
+  };
+  var lower = (v1DataType || '').toString().toLowerCase();
+  return mapping[lower] || 'All';
+}
+
+function wclV2MapFightsToV1_(graphqlReport) {
+  var v1 = {
+    title: graphqlReport.title || '',
+    start: graphqlReport.startTime,
+    end: graphqlReport.endTime,
+    zone: graphqlReport.zone ? graphqlReport.zone.id : 0,
+    fights: [],
+    enemies: [],
+    friendlies: []
+  };
+
+  if (graphqlReport.fights) {
+    for (var i = 0; i < graphqlReport.fights.length; i++) {
+      var f = graphqlReport.fights[i];
+      v1.fights.push({
+        id: f.id,
+        start_time: f.startTime,
+        end_time: f.endTime,
+        boss: f.boss || 0,
+        originalBoss: f.originalEncounterID || f.boss || 0,
+        kill: f.kill || false,
+        name: f.name || '',
+        fightPercentage: f.fightPercentage || 0,
+        bossPercentage: f.bossPercentage || 0
+      });
+    }
+  }
+
+  var actors = [];
+  if (graphqlReport.masterData && graphqlReport.masterData.actors) {
+    actors = graphqlReport.masterData.actors;
+  }
+
+  for (var j = 0; j < actors.length; j++) {
+    var a = actors[j];
+    var mappedActor = {
+      id: a.id,
+      guid: a.gameID,
+      name: a.name,
+      type: a.subType || a.type,
+      fights: []
+    };
+
+    if (graphqlReport.fights) {
+      for (var k = 0; k < graphqlReport.fights.length; k++) {
+        var fight = graphqlReport.fights[k];
+        var participated = false;
+
+        if (a.type === 'Player') {
+          if (fight.friendlyPlayers && fight.friendlyPlayers.indexOf(a.id) > -1) {
+            participated = true;
+          }
+        } else if (a.type === 'NPC' || a.type === 'Boss') {
+          if (fight.enemyNPCs) {
+            for (var m = 0; m < fight.enemyNPCs.length; m++) {
+              if (fight.enemyNPCs[m].id === a.id) {
+                participated = true;
+                break;
+              }
+            }
+          }
+        } else if (a.type === 'Pet') {
+          if (fight.friendlyPets) {
+            for (var m = 0; m < fight.friendlyPets.length; m++) {
+              if (fight.friendlyPets[m].id === a.id) {
+                participated = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (participated) {
+          mappedActor.fights.push({ id: fight.id });
+        }
+      }
+    }
+
+    if (a.type === 'Player' || a.type === 'Pet') {
+      v1.friendlies.push(mappedActor);
+    } else {
+      v1.enemies.push(mappedActor);
+    }
+  }
+
+  return v1;
+}
+
+function wclParseV1Url_(url) {
+  var v1Index = url.indexOf('/v1/');
+  if (v1Index === -1) return null;
+  
+  var rest = url.substring(v1Index + 4);
+  var queryIndex = rest.indexOf('?');
+  var path = queryIndex > -1 ? rest.substring(0, queryIndex) : rest;
+  var queryString = queryIndex > -1 ? rest.substring(queryIndex + 1) : '';
+  
+  var params = {};
+  if (queryString) {
+    var pairs = queryString.split('&');
+    for (var i = 0; i < pairs.length; i++) {
+      var pair = pairs[i].split('=');
+      var key = decodeURIComponent(pair[0]);
+      var value = pair.length > 1 ? decodeURIComponent(pair[1]) : '';
+      params[key] = value;
+    }
+  }
+  
+  var parts = path.split('/');
+  return {
+    path: path,
+    parts: parts,
+    params: params
+  };
+}
+
+function wclTranslateV1UrlToV2GraphQL_(url, auth) {
+  var parsed = wclParseV1Url_(url);
+  if (!parsed) {
+    throw new Error('[WCL Wrapper] Could not parse V1 URL: ' + url);
+  }
+
+  var parts = parsed.parts;
+  var params = parsed.params;
+
+  if (parts[0] === 'report') {
+    if (parts[1] === 'fights') {
+      var reportCode = parts[2];
+      return wclV2FetchFights_(auth, reportCode, params);
+    }
+    
+    if (parts[1] === 'tables') {
+      var dataType = parts[2];
+      var reportCode = parts[3];
+      
+      var options = {};
+      if (params.start !== undefined) options.start = Number(params.start);
+      if (params.end !== undefined) options.end = Number(params.end);
+      if (params.abilityid !== undefined) options.abilityid = Number(params.abilityid);
+      if (params.sourceid !== undefined) options.sourceid = Number(params.sourceid);
+      if (params.targetid !== undefined) options.targetid = Number(params.targetid);
+      if (params.encounter !== undefined) options.encounter = Number(params.encounter);
+      if (params.hostility !== undefined) options.hostility = Number(params.hostility);
+      if (params.translate !== undefined) options.translate = (params.translate === 'true' || params.translate === true);
+      
+      return wclV2FetchTable_(auth, reportCode, dataType, options);
+    }
+    
+    if (parts[1] === 'events') {
+      var dataType = parts[2];
+      var reportCode = parts[3];
+      
+      var options = {};
+      if (params.start !== undefined) options.start = Number(params.start);
+      if (params.end !== undefined) options.end = Number(params.end);
+      if (params.abilityid !== undefined) options.abilityid = Number(params.abilityid);
+      if (params.sourceid !== undefined) options.sourceid = Number(params.sourceid);
+      if (params.targetid !== undefined) options.targetid = Number(params.targetid);
+      if (params.hostility !== undefined) options.hostility = Number(params.hostility);
+      if (params.limit !== undefined) options.limit = Number(params.limit);
+      if (params.filter !== undefined) options.filterExpression = params.filter;
+      if (params.nextPageTimestamp !== undefined) options.nextPageTimestamp = Number(params.nextPageTimestamp);
+      
+      return wclV2FetchEvents_(auth, reportCode, dataType, options);
+    }
+  }
+
+  throw new Error('[WCL Wrapper] Unsupported V1 REST URL path for V2 mapping: ' + parsed.path);
 }
