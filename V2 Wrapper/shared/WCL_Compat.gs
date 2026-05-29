@@ -591,6 +591,13 @@ function wclBuildFilterExpression_(params) {
       parts.push('target.class = "' + params.targetclass + '"');
     }
   }
+
+  if (params.options) {
+    var optionsVal = Number(params.options);
+    if (!isNaN(optionsVal) && (optionsVal & 4096) === 4096) {
+      parts.push('ability.avoidable = true');
+    }
+  }
   
   return parts.length > 0 ? parts.join(' and ') : undefined;
 }
