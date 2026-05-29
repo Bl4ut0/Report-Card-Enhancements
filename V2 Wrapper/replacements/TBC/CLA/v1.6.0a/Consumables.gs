@@ -319,8 +319,7 @@ function populateBuffConsumables() {
                         if (headerValue == getStringForLang("battleElixir", langKeys, langTrans, "", "", "", "") || headerValue == getStringForLang("guardianElixir", langKeys, langTrans, "", "", "", ""))
                           bossCovered.push(fight.id);
                       }
-                    }
-                    var name = spellIdsCell.toString().split(" [")[1];
+                      var name = spellIdsCell.toString().split(" [")[1];
                       if (name != null && name.length > 0 && name.indexOf("*") > -1) {
                         if (names.indexOf(getStringForLang(name.replace("]", "").replace("*", ""), langKeys, langTrans, "", "", "", "") + "*") < 0) {
                           names += getStringForLang(name.replace("]", "").replace("*", ""), langKeys, langTrans, "", "", "", "") + "*,";
@@ -331,7 +330,8 @@ function populateBuffConsumables() {
                           names += getStringForLang(name.replace("]", ""), langKeys, langTrans, "", "", "", "") + ",";
                         }
                       }
-                    })
+                    }
+                  })
                   }
                 })
               }

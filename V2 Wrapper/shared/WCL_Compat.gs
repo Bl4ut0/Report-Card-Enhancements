@@ -214,7 +214,7 @@ function wclV2GetAccessToken_(auth) {
   }
 
   // Request new token
-  var authString = Utilities.base64Encode(auth.clientId + ':' + auth.clientSecret);
+  var authString = Utilities.base64Encode(auth.clientId + ':' + auth.clientSecret, Utilities.Charset.UTF_8);
   
   var responseData = wclV2Fetch_(WCL_V2_TOKEN_URL_, {
     method: 'POST',

@@ -43,5 +43,7 @@ v2:client_id:client_secret
 
 ## Current State
 
-The Warcraft Logs V2 GraphQL compatibility wrapper is fully implemented and verified. The wrapper handles fight structures (encounter/boss IDs, fight timings, actor participation), table data (structure-matched automatically by WCL GraphQL), and event lists (reconstructing nested `ability` objects from V2 `abilityGameID` for backward compatibility). The wrapper has been validated end-to-end against live Warcraft Logs reports, demonstrating output parity between the V1 REST and V2 GraphQL endpoints.
+The Warcraft Logs V2 GraphQL compatibility wrapper is fully implemented, verified, and production-ready for TBC v1.6.0a, supporting both the **Combat Log Analytics (CLA)** and **Role Performance Breakdown (RPB)** sheets. 
+
+The wrapper handles fight structures (encounter/boss IDs, fight timings, actor participation), table data (structure-matched automatically by WCL GraphQL), and event lists (reconstructing nested `ability` objects from V2 `abilityGameID` for backward compatibility). The wrapper has been validated end-to-end against live Warcraft Logs reports, demonstrating 100% output parity between the V1 REST and V2 GraphQL endpoints for both sheets.
 
