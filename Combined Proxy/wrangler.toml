@@ -1,0 +1,8 @@
+name = "combined-api-proxy"
+main = "worker.js"
+compatibility_date = "2024-03-01"
+
+[vars]
+WCL_PROXY_MAX_RETRIES = "2"
+WCL_PROXY_MAX_BACKOFF_MS = "10000"
+WCL_PROXY_CACHE_TTL_SECONDS = "0"
