@@ -308,10 +308,10 @@ function wclV2FetchFights_(auth, reportCode, options) {
 }
 
 function wclV2FetchTable_(auth, reportCode, dataType, options) {
-  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int) {' +
+  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String) {' +
     '  reportData {' +
     '    report(code: $code) {' +
-    '      table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID)' +
+    '      table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression)' +
     '    }' +
     '  }' +
     '}';
@@ -324,7 +324,9 @@ function wclV2FetchTable_(auth, reportCode, dataType, options) {
     abilityID: options.abilityid !== undefined ? Number(options.abilityid) : undefined,
     sourceID: options.sourceid !== undefined ? Number(options.sourceid) : undefined,
     targetID: options.targetid !== undefined ? Number(options.targetid) : undefined,
-    encounterID: options.encounter !== undefined ? Number(options.encounter) : undefined
+    encounterID: options.encounter !== undefined ? Number(options.encounter) : undefined,
+    hostilityType: options.hostility !== undefined ? (options.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
+    filterExpression: options.filterExpression !== undefined ? options.filterExpression : undefined
   };
   
   var rawResponse = wclV2GraphQLQuery_(auth, query, variables);
@@ -573,6 +575,7 @@ function wclTranslateV1UrlToV2GraphQL_(url, auth) {
       if (params.targetid !== undefined) options.targetid = Number(params.targetid);
       if (params.encounter !== undefined) options.encounter = Number(params.encounter);
       if (params.hostility !== undefined) options.hostility = Number(params.hostility);
+      if (params.filter !== undefined) options.filterExpression = params.filter;
       if (params.translate !== undefined) options.translate = (params.translate === 'true' || params.translate === true);
       
       return wclV2FetchTable_(auth, reportCode, dataType, options);
