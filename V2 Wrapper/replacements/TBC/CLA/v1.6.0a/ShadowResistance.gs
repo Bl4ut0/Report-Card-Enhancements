@@ -191,7 +191,7 @@ function populateShadowResistance() {
   var rangeBoss = sheet.getRange(firstPlayerNameRow - 2, firstPlayerNameColumn);
   if (fightIDToEvaluate == "")
     rangeBoss.setValue(getStringForLang("noFightFound", langKeys, langTrans, "", "", "", ""))
-  var allPlayersData = wclFetchTable_(api_key, logId, "casts", { lang: lang });
+  var allPlayersData = wclFetchTable_(api_key, logId, "casts", { lang: lang, start: 0, end: 999999999999 });
   const allPlayersByNameAsc = sortByProperty(sortByProperty(allPlayersData.entries, "name"), "type");
   allPlayersByNameAsc.forEach(function (playerByNameAsc, playerCountByNameAsc) {
     if ((playerByNameAsc.type == "Druid" || playerByNameAsc.type == "Hunter" || playerByNameAsc.type == "Mage" || playerByNameAsc.type == "Priest" || playerByNameAsc.type == "Paladin" || playerByNameAsc.type == "Rogue" || playerByNameAsc.type == "Shaman" || playerByNameAsc.type == "Warlock" || playerByNameAsc.type == "Warrior") && playerByNameAsc.total > 20) {

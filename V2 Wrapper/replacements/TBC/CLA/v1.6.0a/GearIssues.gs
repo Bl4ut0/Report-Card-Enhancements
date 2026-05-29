@@ -270,7 +270,7 @@ function populateGearIssues() {
     dateString = Utilities.formatDate(new Date(allFightsData.start), "GMT+1", "dd/MM/yyyy HH:mm:ss");
   sheet.getRange(information.getRow() + 2, information.getColumn() + 1).setValue(dateString);
 
-  var allPlayersDataUnfiltered = wclFetchTable_(api_key, logId, "casts", { lang: lang });
+  var allPlayersDataUnfiltered = wclFetchTable_(api_key, logId, "casts", { lang: lang, start: 0, end: 999999999999 });
   const allPlayersByNameAsc = sortByProperty(sortByProperty(allPlayersDataUnfiltered.entries, 'name'), "type");
 
   var playersFound = 0;

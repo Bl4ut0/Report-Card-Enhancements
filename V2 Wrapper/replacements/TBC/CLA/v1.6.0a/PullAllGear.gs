@@ -76,7 +76,7 @@ function populateGearBreakdown() {
     logId = reportPathOrId;
   var apiKeyString = "?translate=true&api_key=" + api_key;
 
-  var allPlayersData = wclFetchTable_(api_key, logId, "casts", { lang: lang });
+  var allPlayersData = wclFetchTable_(api_key, logId, "casts", { lang: lang, start: 0, end: 999999999999 });
 
   var allFightsData = wclFetchFights_(api_key, logId, { lang: lang });
   var baseSheetName = getStringForLang("gearListingTab", langKeys, langTrans, "", "", "", "")
