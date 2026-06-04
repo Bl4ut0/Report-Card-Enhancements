@@ -1,17 +1,49 @@
+# Google Sheets Apps Script Reference Code
+
+Copy and paste this consolidated `wrapper.gs` script into your Google Sheets Apps Script editor alongside the other core sheet files.
+
+---
+
+## wrapper.gs
+
+This combined script intercepts all Warcraft Logs V1/V2 requests and Discord Webhook calls. It automatically routes them through the Cloudflare Worker proxies if the script properties are configured; otherwise, it transparently falls back to direct WCL/Discord requests.
+
+```javascript
 /**
- * Warcraft Logs compatibility facade for CLA/RPB source files.
+ * wrapper.gs
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Warcraft Logs Compatibility Facade & Discord Webhook Relay Wrapper
  *
- * Credential modes:
- *   api_key                 -> V1 REST
- *   client_id:client_secret -> V2 GraphQL client credentials
+ * This combined file allows Google Sheets to fetch Warcraft Logs data (V1 and V2)
+ * and send Discord Webhook messages optionally through Cloudflare Worker proxies.
+ *
+ * CONFIGURATION:
+ *   You can configure your Cloudflare Worker details EITHER by entering them in
+ *   the global variables below, OR by adding them to Settings -> Script Properties:
+ *     - WCL_PROXY_WORKER_URL    : URL to your Cloudflare Warcraft Logs proxy worker
+ *     - WCL_PROXY_SECRET        : Secret password for the WCL proxy
+ *     - DISCORD_PROXY_WORKER_URL: URL to your Cloudflare Discord webhook proxy worker
+ *     - DISCORD_PROXY_SECRET    : Secret password for the Discord proxy
+ *
+ *   If these values are left empty/null, the sheet automatically falls back to direct,
+ *   unproxied requests (direct Warcraft Logs API and direct Discord webhook deliveries).
+ *
+ * BUTTON ASSIGNMENTS:
+ *   - CLA Sheet: Assign the START EXPORT button/drawing to: runCLAExportWithDiscordProxy
+ *   - RPB Sheet: Assign the START EXPORT button/drawing to: runRPBExportWithDiscordProxy
+ * ─────────────────────────────────────────────────────────────────────────────
  */
+
+// ── Optional Hardcoded Worker Configurations ─────────────────────────────────
+// Fill these in to hardcode worker options. If left null, Script Properties will be checked.
+var WCL_PROXY_WORKER_URL_CONFIG     = null; // e.g. 'https://your-worker.workers.dev/wcl'
+var WCL_PROXY_SECRET_CONFIG         = null; // e.g. 'your-wcl-proxy-secret'
+var DISCORD_PROXY_WORKER_URL_CONFIG = null; // e.g. 'https://your-worker.workers.dev/discord'
+var DISCORD_PROXY_SECRET_CONFIG     = null; // e.g. 'your-discord-proxy-secret'
 
 // Global config variables for V2 GraphQL
 var WCL_V2_TOKEN_URL_ = 'https://www.warcraftlogs.com/oauth/token';
 var WCL_V2_CLIENT_URL_ = 'https://www.warcraftlogs.com/api/v2/client';
-
-// Global pacing variable to track the last request timestamp during script execution
-var wclLastFetchTime_ = 0;
 
 /**
  * Parses raw credentials string to determine mode (v1 or v2).
@@ -86,33 +118,8 @@ function wclFetchInternal_(url, options, errorPrefix) {
   }
 
   var props = PropertiesService.getScriptProperties();
-  var workerUrl = (typeof WCL_PROXY_WORKER_URL_CONFIG !== 'undefined' && WCL_PROXY_WORKER_URL_CONFIG) || props.getProperty('WCL_PROXY_WORKER_URL');
-  var proxySecret = (typeof WCL_PROXY_SECRET_CONFIG !== 'undefined' && WCL_PROXY_SECRET_CONFIG) || props.getProperty('WCL_PROXY_SECRET');
-
-  // Automatic rate-limit pacing to prevent request overflows (corresponds to WCL 3,600 points/hour standard limit)
-  var minInterval = 1000;
-  try {
-    var intervalProp = props.getProperty('WCL_MIN_FETCH_INTERVAL_MS');
-    if (intervalProp) {
-      var parsedInterval = parseInt(intervalProp, 10);
-      if (!isNaN(parsedInterval) && parsedInterval >= 0) {
-        minInterval = parsedInterval;
-      }
-    }
-  } catch (e) {
-    // Ignore property read errors
-  }
-
-  if (minInterval > 0) {
-    var now = new Date().getTime();
-    if (typeof wclLastFetchTime_ !== 'undefined' && wclLastFetchTime_ > 0) {
-      var elapsed = now - wclLastFetchTime_;
-      if (elapsed < minInterval) {
-        Utilities.sleep(minInterval - elapsed);
-      }
-    }
-    wclLastFetchTime_ = new Date().getTime();
-  }
+  var workerUrl = props.getProperty('WCL_PROXY_WORKER_URL');
+  var proxySecret = props.getProperty('WCL_PROXY_SECRET');
 
   var response;
   if (workerUrl) {
@@ -702,3 +709,232 @@ function wclTranslateV1UrlToV2GraphQL_(url, auth) {
 
   throw new Error('[WCL Wrapper] Unsupported V1 REST URL path for V2 mapping: ' + parsed.path);
 }
+
+/**
+ * Patch-only CLA export wrapper.
+ *
+ * Assign the CLA export button/drawing to this function instead of exportSheets(),
+ * or run it from the Apps Script editor.
+ */
+function runCLAExportWithDiscordProxy() {
+  runExportWithDiscordProxy_({
+    project: 'CLA',
+    coreFunctionName: 'exportSheets',
+    outputUrlCell: 'B27',
+    label: 'Combat Log Analytics',
+    color: 10544871,
+  });
+}
+
+/**
+ * Patch-only RPB export wrapper.
+ *
+ * Assign the RPB export button/drawing to this function instead of
+ * generateRoleSheets(), or run it from the Apps Script editor.
+ */
+function runRPBExportWithDiscordProxy() {
+  runExportWithDiscordProxy_({
+    project: 'RPB',
+    coreFunctionName: 'generateRoleSheets',
+    outputUrlCell: 'E4',
+    label: 'Role Performance Breakdown',
+    color: 10783477,
+  });
+}
+
+/**
+ * Temporarily clears the core sheet webhook, runs the locked export function,
+ * restores the webhook, then sends a proxy-backed Discord notification.
+ *
+ * @param {Object} config
+ */
+function runExportWithDiscordProxy_(config) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var activeSheet = ss.getActiveSheet();
+  var webhookRange = getSheetDiscordWebhookRange_();
+  var originalWebhook = webhookRange ? webhookRange.getValue() : '';
+  var outputUrl = '';
+
+  if (typeof this[config.coreFunctionName] !== 'function') {
+    throw new Error('Core export function not found: ' + config.coreFunctionName);
+  }
+
+  try {
+    if (webhookRange) {
+      webhookRange.setValue('');
+      SpreadsheetApp.flush();
+    }
+
+    this[config.coreFunctionName]();
+  } finally {
+    if (webhookRange) {
+      webhookRange.setValue(originalWebhook);
+      SpreadsheetApp.flush();
+    }
+  }
+
+  try {
+    outputUrl = activeSheet.getRange(config.outputUrlCell).getValue();
+  } catch (err) {
+    Logger.log('[Shared_DiscordWebhook] Could not read export URL from ' + config.outputUrlCell + ': ' + err.message);
+  }
+
+  if (originalWebhook && outputUrl && outputUrl.toString().indexOf('http') === 0) {
+    sendProxyExportNotification_(originalWebhook, outputUrl.toString(), config);
+  } else {
+    Logger.log('[Shared_DiscordWebhook] Export wrapper did not send Discord notification. Webhook or export URL missing.');
+  }
+}
+
+/**
+ * Finds the shared CLA/RPB Discord webhook setting:
+ * Instructions tab, marker "5.", four columns to the right.
+ *
+ * @return {Range|null}
+ */
+function getSheetDiscordWebhookRange_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var instructionsSheet = ss.getSheetByName('Instructions');
+  if (!instructionsSheet) return null;
+
+  var marker = instructionsSheet
+    .createTextFinder('^5.$')
+    .useRegularExpression(true)
+    .findNext();
+  if (!marker) return null;
+
+  return marker.offset(0, 4);
+}
+
+/**
+ * Sends a compact export-complete notification through the proxy helper.
+ *
+ * @param {string} webHook
+ * @param {string} outputUrl
+ * @param {Object} config
+ */
+function sendProxyExportNotification_(webHook, outputUrl, config) {
+  var payload = JSON.stringify({
+    username: config.label,
+    embeds: [{
+      title: config.label + ' export complete',
+      url: outputUrl,
+      color: config.color,
+      description: outputUrl,
+    }],
+  });
+
+  fetchDiscordWebhook_(webHook, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+    payload: payload,
+    muteHttpExceptions: true,
+  });
+}
+
+/**
+ * Sends one or more Discord webhook URLs safely. Supports the upstream "$$$$$"
+ * delimiter used by CLA/RPB for posting to two webhooks.
+ *
+ * @param {string} webHook Raw Discord webhook URL, or two URLs separated by "$$$$$"
+ * @param {Object} params  UrlFetchApp params containing the Discord payload
+ * @return {Array} HTTP responses or null entries for failed sends
+ */
+function fetchDiscordWebhook_(webHook, params) {
+  if (!webHook || webHook.toString().length === 0) return [];
+
+  var urls = webHook.toString().split('$$$$$');
+  var responses = [];
+
+  for (var i = 0; i < urls.length; i++) {
+    var url = urls[i];
+    if (!url || url.toString().length === 0) continue;
+    responses.push(fetchSingleDiscordWebhook_(url.toString(), params || {}));
+  }
+
+  return responses;
+}
+
+/**
+ * Sends a single Discord webhook. If DISCORD_PROXY_WORKER_URL is configured,
+ * the POST goes to the Worker root and the real Discord URL is sent in a
+ * header. Otherwise it falls back to direct Discord delivery.
+ *
+ * This function intentionally does not throw on notification failure. Discord
+ * should not be allowed to make a completed spreadsheet export look failed.
+ *
+ * @param {string} webHookUrl
+ * @param {Object} params
+ * @return {HTTPResponse|null}
+ */
+function fetchSingleDiscordWebhook_(webHookUrl, params) {
+  var props = PropertiesService.getScriptProperties();
+  var workerUrl = (props.getProperty('DISCORD_PROXY_WORKER_URL') || '').replace(/\/$/, '');
+  var proxySecret = props.getProperty('DISCORD_PROXY_SECRET') || '';
+
+  try {
+    if (workerUrl) {
+      return UrlFetchApp.fetch(workerUrl, buildDiscordProxyParams_(webHookUrl, params, proxySecret));
+    }
+
+    var directParams = cloneDiscordParams_(params);
+    directParams.muteHttpExceptions = true;
+    return UrlFetchApp.fetch(webHookUrl, directParams);
+  } catch (err) {
+    Logger.log('[Shared_DiscordWebhook] Discord notification failed but export will continue: ' + err.message);
+    return null;
+  }
+}
+
+/**
+ * Builds UrlFetchApp params for the Worker request.
+ *
+ * @param {string} webHookUrl
+ * @param {Object} params
+ * @param {string} proxySecret
+ * @return {Object}
+ */
+function buildDiscordProxyParams_(webHookUrl, params, proxySecret) {
+  var proxyParams = cloneDiscordParams_(params);
+  var headers = proxyParams.headers || {};
+
+  headers['Content-Type'] = headers['Content-Type'] || headers['content-type'] || 'application/json';
+  headers['x-discord-webhook'] = webHookUrl;
+  if (proxySecret) headers['x-proxy-secret'] = proxySecret;
+
+  proxyParams.headers = headers;
+  proxyParams.method = proxyParams.method || 'POST';
+  proxyParams.muteHttpExceptions = true;
+
+  return proxyParams;
+}
+
+/**
+ * Clones the small UrlFetchApp params object used by CLA/RPB.
+ *
+ * @param {Object} params
+ * @return {Object}
+ */
+function cloneDiscordParams_(params) {
+  var clone = {};
+  params = params || {};
+
+  for (var key in params) {
+    if (!params.hasOwnProperty(key)) continue;
+    if (key === 'headers' && params.headers) {
+      clone.headers = {};
+      for (var headerName in params.headers) {
+        if (params.headers.hasOwnProperty(headerName)) {
+          clone.headers[headerName] = params.headers[headerName];
+        }
+      }
+    } else {
+      clone[key] = params[key];
+    }
+  }
+
+  return clone;
+}
+```

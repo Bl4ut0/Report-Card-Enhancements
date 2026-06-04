@@ -94,40 +94,104 @@ async function handleWclProxy(request, env) {
   const maxRetries = parsePositiveInteger(env.WCL_PROXY_MAX_RETRIES, 2);
   const maxBackoffMs = parsePositiveInteger(env.WCL_PROXY_MAX_BACKOFF_MS, 10000);
   const cacheTtlSeconds = parsePositiveInteger(env.WCL_PROXY_CACHE_TTL_SECONDS, 0);
+  const staleTtlSeconds = parsePositiveInteger(env.WCL_PROXY_STALE_TTL_SECONDS, 86400);
 
   const targetRequest = buildTargetRequest(envelope);
-  const cacheKey = new Request(targetRequest.url, { method: 'GET' });
 
-  if (targetRequest.method === 'GET' && cacheTtlSeconds > 0) {
-    const cached = await caches.default.match(cacheKey);
-    if (cached) {
-      return withProxyHeaders(cached, 1, true);
+  let cacheKey = null;
+  let cachedResponse = null;
+  let isFresh = false;
+
+  if (cacheTtlSeconds > 0) {
+    try {
+      cacheKey = await getCacheKey(envelope, targetRequest);
+      if (cacheKey && typeof caches !== 'undefined' && caches.default) {
+        const matched = await caches.default.match(cacheKey);
+        if (matched) {
+          cachedResponse = matched;
+          const cachedAt = Number.parseInt(matched.headers.get('x-wcl-proxy-cached-at') || '0', 10);
+          const ageMs = Date.now() - cachedAt;
+          if (ageMs < cacheTtlSeconds * 1000) {
+            isFresh = true;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Cache match error:', err);
     }
+  }
+
+  if (isFresh && cachedResponse) {
+    return withProxyHeaders(cachedResponse, 1, 'hit');
   }
 
   let response;
   let attempts = 0;
+  let fetchError = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     attempts = attempt + 1;
-    response = await fetch(targetRequest.clone());
+    try {
+      response = await fetch(targetRequest.clone());
 
-    if (!RETRYABLE_STATUSES.has(response.status) || attempt === maxRetries) {
-      break;
+      if (!RETRYABLE_STATUSES.has(response.status) || attempt === maxRetries) {
+        break;
+      }
+
+      const retryAfterMs = getRetryAfterMs(response.headers.get('retry-after'), maxBackoffMs);
+      await sleep(retryAfterMs || Math.min(1000 * Math.pow(2, attempt), maxBackoffMs));
+    } catch (err) {
+      fetchError = err;
+      if (attempt === maxRetries) {
+        break;
+      }
+      await sleep(Math.min(1000 * Math.pow(2, attempt), maxBackoffMs));
     }
-
-    const retryAfterMs = getRetryAfterMs(response.headers.get('retry-after'), maxBackoffMs);
-    await sleep(retryAfterMs || Math.min(1000 * Math.pow(2, attempt), maxBackoffMs));
   }
 
-  if (targetRequest.method === 'GET' && cacheTtlSeconds > 0 && response.ok) {
-    const cacheable = new Response(response.body, response);
-    cacheable.headers.set('cache-control', 'public, max-age=' + cacheTtlSeconds);
-    await caches.default.put(cacheKey, cacheable.clone());
-    return withProxyHeaders(cacheable, attempts, false);
+  const isUpstreamError = !response || !response.ok;
+  if (isUpstreamError && cachedResponse) {
+    const fallbackResponse = withProxyHeaders(cachedResponse, attempts, 'fallback');
+    if (!response && fetchError) {
+      fallbackResponse.headers.set('x-wcl-proxy-fallback-reason', fetchError.message || 'fetch_error');
+    } else if (response) {
+      fallbackResponse.headers.set('x-wcl-proxy-fallback-reason', `status_${response.status}`);
+    }
+    return fallbackResponse;
   }
 
-  return withProxyHeaders(response, attempts, false);
+  if (!response) {
+    return new Response(`Upstream Fetch Error: ${fetchError?.message || 'Unknown error'}`, {
+      status: 502,
+      headers: {
+        'x-wcl-proxy-attempts': attempts.toString(),
+        'x-wcl-proxy-cache': 'miss',
+      }
+    });
+  }
+
+  if (cacheTtlSeconds > 0 && cacheKey && response.ok) {
+    try {
+      if (typeof caches !== 'undefined' && caches.default) {
+        const responseText = await response.clone().text();
+        const cachedHeaders = new Headers(response.headers);
+        cachedHeaders.set('x-wcl-proxy-cached-at', Date.now().toString());
+        cachedHeaders.set('cache-control', `public, max-age=${staleTtlSeconds}`);
+
+        const cacheableResponse = new Response(responseText, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: cachedHeaders,
+        });
+
+        await caches.default.put(cacheKey, cacheableResponse);
+      }
+    } catch (err) {
+      console.warn('Cache write error:', err);
+    }
+  }
+
+  return withProxyHeaders(response, attempts, 'miss');
 }
 
 function validateEnvelope(envelope) {
@@ -201,22 +265,58 @@ function buildTargetRequest(envelope) {
 }
 
 function copyAllowedHeader(headers, inputHeaders, name) {
-  const value = inputHeaders[name] || inputHeaders[name.toLowerCase()] || inputHeaders[name.toUpperCase()];
-  if (value) {
-    headers.set(name, value);
+  const targetLower = name.toLowerCase();
+  for (const key of Object.keys(inputHeaders)) {
+    if (key.toLowerCase() === targetLower) {
+      headers.set(name, inputHeaders[key]);
+      return;
+    }
   }
 }
 
-function withProxyHeaders(response, attempts, cacheHit) {
+function withProxyHeaders(response, attempts, cacheStatus) {
   const headers = new Headers(response.headers);
   headers.set('x-wcl-proxy-attempts', attempts.toString());
-  headers.set('x-wcl-proxy-cache', cacheHit ? 'hit' : 'miss');
+  headers.set('x-wcl-proxy-cache', cacheStatus);
 
-  return new Response(response.body, {
+  return new Response(response.clone().body, {
     status: response.status,
     statusText: response.statusText,
     headers,
   });
+}
+
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+async function getCacheKey(envelope, targetRequest) {
+  const method = targetRequest.method;
+  if (method !== 'GET' && method !== 'POST') {
+    return null;
+  }
+
+  const targetUrl = new URL(targetRequest.url);
+  if (targetUrl.pathname === '/oauth/token') {
+    return null;
+  }
+
+  let cacheUrlStr = targetRequest.url;
+  if (method === 'POST') {
+    const bodyStr = envelope.body ? (typeof envelope.body === 'string' ? envelope.body : JSON.stringify(envelope.body)) : '';
+    const bodyHash = await sha256(bodyStr);
+    
+    const authHeader = targetRequest.headers.get('authorization') || '';
+    const authHash = authHeader ? await sha256(authHeader) : 'none';
+
+    cacheUrlStr = `${targetRequest.url}?body_hash=${bodyHash}&auth_hash=${authHash}`;
+  }
+
+  return new Request(cacheUrlStr, { method: 'GET' });
 }
 
 function parsePositiveInteger(value, fallback) {

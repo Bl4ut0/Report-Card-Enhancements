@@ -67,6 +67,26 @@ Report Card Enhancements/
     ARCHITECTURE.md
     KNOWN_ISSUES.md
     VERSION_ORGANIZATION.md
+
+  Combined Source/
+    CLA/
+      TBC/
+        v1.6.0a/
+          <patched-files>.gs
+          wrapper.gs
+          worker/
+            worker.js
+            wrangler.toml
+            README.md
+    RPB/
+      TBC/
+        v1.6.0a/
+          <patched-files>.gs
+          wrapper.gs
+          worker/
+            worker.js
+            wrangler.toml
+            README.md
 ```
 
 Local-only ignored folders may exist in a working checkout:
@@ -86,6 +106,7 @@ Original Code/
 | Layer | Owned Here? | Notes |
 |---|---:|---|
 | CLA/RPB upstream behavior | No | Core tools are third-party and should be treated as upstream source. |
+| `Combined Source/` | Yes | Generated deployment-ready outputs (patches, unified wrapper, and worker packages). |
 | `Current Source/` snapshots | Local only | Ignored source snapshots used for private/local review. |
 | `Original Code/` snapshots | Local only | Ignored upstream/reference snapshots. |
 | `Worker Proxy/` | Yes | Cloudflare Worker relay and source-level proxy examples. |

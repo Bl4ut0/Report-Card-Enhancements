@@ -29,33 +29,29 @@ Preferred shape for committed examples:
 ```text
 Worker Proxy/
   examples/
-    Vanilla/
-      CLA/
+    CLA/
+      Vanilla/
         <upstream-version>/
-      RPB/
-        <upstream-version>/
-    TBC/
-      CLA/
+      TBC/
         v1.6.0a/
-      RPB/
+      SOD/
+        <upstream-version>/
+      WOTLK/
+        <upstream-version>/
+      Cata/
+        <upstream-version>/
+      MoP/
+        <upstream-version>/
+    RPB/
+      Vanilla/
+        <upstream-version>/
+      TBC/
         v1.6.0a/
-    SOD/
-      CLA/
+      SOD/
         <upstream-version>/
-      RPB/
+      WOTLK/
         <upstream-version>/
-    WOTLK/
-      CLA/
-        <upstream-version>/
-      RPB/
-        <upstream-version>/
-    Cata/
-      CLA/
-        <upstream-version>/
-    MoP/
-      CLA/
-        <upstream-version>/
-      RPB/
+      MoP/
         <upstream-version>/
 ```
 
@@ -152,11 +148,34 @@ Worker Proxy/examples/CLA/TBC/v1.6.0a/
 Worker Proxy/examples/RPB/TBC/v1.6.0a/
 ```
 
-New Vanilla, TBC, SOD, WOTLK, Cata, and MoP work should use the explicit expansion folder shape.
-
 The existing V2 Wrapper replacement scaffold starts with TBC `v1.6.0a` placeholders:
 
 ```text
 V2 Wrapper/replacements/TBC/CLA/v1.6.0a/
 V2 Wrapper/replacements/TBC/RPB/v1.6.0a/
 ```
+
+The generated single-file deployment outputs from `build_combined.js` are organized by Tool first to mirror the Worker Proxy example layout:
+
+```text
+Combined Source/
+  CLA/
+    TBC/
+      v1.6.0a/
+        <replacement-files>.gs
+        wrapper.gs
+        worker/
+          worker.js
+          wrangler.toml
+          README.md
+  RPB/
+    TBC/
+      v1.6.0a/
+        <replacement-files>.gs
+        wrapper.gs
+        worker/
+          worker.js
+          wrangler.toml
+          README.md
+```
+

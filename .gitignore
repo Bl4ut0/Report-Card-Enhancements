@@ -6,3 +6,12 @@ compose.yml
 ## Folders
 Original Code/
 Current Source/
+
+## Tool caches and dependencies
+.wrangler/
+node_modules/
+
+## Logs
+*.log
+npm-debug.log*
+

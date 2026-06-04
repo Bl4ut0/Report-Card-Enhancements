@@ -189,8 +189,9 @@ function fetchDiscordWebhook_(webHook, params) {
  */
 function fetchSingleDiscordWebhook_(webHookUrl, params) {
   var props = PropertiesService.getScriptProperties();
-  var workerUrl = (props.getProperty('DISCORD_PROXY_WORKER_URL') || '').replace(/\/$/, '');
-  var proxySecret = props.getProperty('DISCORD_PROXY_SECRET') || '';
+  var workerUrl = (typeof DISCORD_PROXY_WORKER_URL_CONFIG !== 'undefined' && DISCORD_PROXY_WORKER_URL_CONFIG) || (props.getProperty('DISCORD_PROXY_WORKER_URL') || '');
+  workerUrl = workerUrl.replace(/\/$/, '');
+  var proxySecret = (typeof DISCORD_PROXY_SECRET_CONFIG !== 'undefined' && DISCORD_PROXY_SECRET_CONFIG) || (props.getProperty('DISCORD_PROXY_SECRET') || '');
 
   try {
     if (workerUrl) {

@@ -80,33 +80,29 @@ Patches and source-level examples should be organized by expansion, tool, and up
 ```text
 <component>/
   examples/
-    Vanilla/
-      CLA/
+    CLA/
+      Vanilla/
         <version>/
-      RPB/
-        <version>/
-    TBC/
-      CLA/
+      TBC/
         v1.6.0a/
-      RPB/
+      SOD/
+        <version>/
+      WOTLK/
+        <version>/
+      Cata/
+        <version>/
+      MoP/
+        <version>/
+    RPB/
+      Vanilla/
+        <version>/
+      TBC/
         v1.6.0a/
-    SOD/
-      CLA/
+      SOD/
         <version>/
-      RPB/
+      WOTLK/
         <version>/
-    WOTLK/
-      CLA/
-        <version>/
-      RPB/
-        <version>/
-    Cata/
-      CLA/
-        <version>/
-    MoP/
-      CLA/
-        <version>/
-      RPB/
+      MoP/
         <version>/
 ```
 

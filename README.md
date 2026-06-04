@@ -9,6 +9,7 @@ This repo is organized around five committed enhancement projects plus shared do
 - `Combined Proxy/` contains the merged Cloudflare Worker combining both Discord Webhook Relay and Warcraft Logs API Proxy into a single deployment footprint.
 - `Automations/` contains Apps Script patch files and n8n support files.
 - `V2 Wrapper/` contains Warcraft Logs V1/V2 compatibility wrapper scaffolding and version-specific replacement sets.
+- `Combined Source/` contains the generated, self-contained deployment outputs (patches, unified `wrapper.gs` facade, and worker package).
 - `Docs/` contains repo-level context and cross-cutting notes.
 
 ## Folder Guide
@@ -20,6 +21,7 @@ This repo is organized around five committed enhancement projects plus shared do
 | `Combined Proxy/` | Consolidated Cloudflare Worker proxy that runs both Discord webhook relaying and Warcraft Logs API proxying from a single worker deployment. |
 | `Automations/` | Apps Script patch files and n8n compose example/setup docs. |
 | `V2 Wrapper/` | Warcraft Logs API compatibility wrapper and expansion/version-specific replacement structure. |
+| `Combined Source/` | Generated self-contained output files (Google Sheets `.gs` replacements, unified `wrapper.gs`, and local `worker/` templates). |
 | `Docs/` | Project architecture, setup notes, patch registry, and troubleshooting. |
 
 ## Local-Only Folders
@@ -32,6 +34,13 @@ These folders may exist in a working checkout, but they are ignored by git becau
 | `Original Code/` | Local original/reference CLA/RPB source snapshots. |
 
 ## Quick Start
+
+For the combined worker and single wrapper deployment (Recommended), start here:
+
+```text
+Docs/COMBINED_SYSTEM.md
+Docs/SHEET_CODE.md
+```
 
 For Discord webhook proxy support, start here:
 
@@ -98,7 +107,7 @@ Do not commit real Web App URLs, Discord webhooks, WarcraftLogs API keys, OAuth 
 
 ### Development Roadmap
 - [x] **Phase 1: Complete V2 GraphQL Adapters**: Implement event and table GraphQL query fetches and write adaptation functions to match the shapes expected by the sheet logic.
-- [ ] **Phase 2: Combined Proxy Testing**: Validate and test the consolidated [Combined Proxy/worker.js](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/worker.js) under simulated rate-limiting scenarios.
+- [x] **Phase 2: Combined Proxy Testing**: Validate and test the consolidated [Combined Proxy/worker.js](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/worker.js) under simulated rate-limiting scenarios.
 - [x] **Phase 3: TBC v1.6.0a End-to-End Proof of Concept**: Apply the replacement sets for TBC CLA and RPB v1.6.0a and verify full compatibility with live WCL V1/V2 endpoints.
 - [ ] **Phase 4: WCL Proxy Pacing (Durable Objects)**: Integrate request pacing/queueing inside the Cloudflare Worker to avoid rate limit spikes.
 - [ ] **Phase 5: Expand Era Coverage**: Port replacement sets to other game eras (Vanilla, Season of Discovery, WotLK, MoP).
