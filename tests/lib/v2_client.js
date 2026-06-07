@@ -89,6 +89,7 @@ function getEventDataType(v1Type) {
 export function mapFightsToV1(graphqlReport) {
   const v1 = {
     title: graphqlReport.title || '',
+    lang: graphqlReport.lang || 'en',
     start: graphqlReport.startTime,
     end: graphqlReport.endTime,
     zone: graphqlReport.zone ? graphqlReport.zone.id : 0,
@@ -100,19 +101,33 @@ export function mapFightsToV1(graphqlReport) {
   if (graphqlReport.fights) {
     for (const f of graphqlReport.fights) {
       const fightZone = f.gameZone || graphqlReport.zone || {};
-      v1.fights.push({
+      const isBoss = f.encounterID && f.encounterID > 0;
+      const fightObj = {
         id: f.id,
         start_time: f.startTime,
         end_time: f.endTime,
         boss: f.encounterID || 0,
-        originalBoss: f.originalEncounterID || f.encounterID || 0,
-        kill: (f.encounterID && f.encounterID > 0) ? (f.kill || false) : undefined,
         name: f.name || '',
-        fightPercentage: f.fightPercentage !== undefined && f.fightPercentage !== null ? Math.round(f.fightPercentage * 100) : 0,
-        bossPercentage: f.bossPercentage !== undefined && f.bossPercentage !== null ? Math.round(f.bossPercentage * 100) : 0,
         zoneID: fightZone.id || 0,
         zoneName: fightZone.name || '',
-      });
+      };
+      if (isBoss) {
+        fightObj.originalBoss = f.originalEncounterID || f.encounterID || 0;
+        fightObj.kill = f.kill || false;
+        if (f.fightPercentage !== undefined && f.fightPercentage !== null) {
+          fightObj.fightPercentage = Math.round(f.fightPercentage * 100);
+        }
+        if (f.bossPercentage !== undefined && f.bossPercentage !== null) {
+          fightObj.bossPercentage = Math.round(f.bossPercentage * 100);
+        }
+        if (f.difficulty !== undefined && f.difficulty !== null) {
+          fightObj.difficulty = f.difficulty;
+        }
+        if (f.size !== undefined && f.size !== null) {
+          fightObj.size = f.size;
+        }
+      }
+      v1.fights.push(fightObj);
     }
   }
 
@@ -319,6 +334,8 @@ export class V2Client {
             enemyNPCs { id gameID }
             friendlyPets { id gameID }
             gameZone { id name }
+            difficulty
+            size
           }
           masterData {
             actors {

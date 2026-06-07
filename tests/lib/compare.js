@@ -28,8 +28,8 @@ function sortArray(arr) {
     });
   }
 
-  // Object array — sort by id, guid, or name
-  const sortKey = 'id' in first ? 'id' : ('guid' in first ? 'guid' : ('name' in first ? 'name' : null));
+  // Object array — sort by guid, id, or name (GUID is stable across V1/V2 reports, report-specific ID is not)
+  const sortKey = 'guid' in first ? 'guid' : ('id' in first ? 'id' : ('name' in first ? 'name' : null));
   if (sortKey) {
     return [...arr].sort((a, b) => {
       const av = a[sortKey];
@@ -63,7 +63,9 @@ export function deepCompare(a, b, path = '$', diffs = [], opts = {}, depth = 0) 
 
   if (diffs.length >= maxDiffs) return diffs;
   if (depth > maxDepth) return diffs;
-  if (ignorePaths.has(path)) return diffs;
+
+  const normalizedPath = path.replace(/\[\d+\]/g, '[*]');
+  if (ignorePaths.has(path) || ignorePaths.has(normalizedPath)) return diffs;
 
   // Both null/undefined
   if (a === null && b === null) return diffs;
@@ -114,17 +116,25 @@ export function deepCompare(a, b, path = '$', diffs = [], opts = {}, depth = 0) 
 
     for (const key of keysA) {
       if (diffs.length >= maxDiffs) break;
+      const subPath = `${path}.${key}`;
+      const normSubPath = subPath.replace(/\[\d+\]/g, '[*]');
+      if (ignorePaths.has(subPath) || ignorePaths.has(normSubPath)) continue;
+
       if (!keysB.has(key)) {
-        diffs.push({ path: `${path}.${key}`, type: 'missing_in_b', valueA: summarizeValue(a[key]) });
+        diffs.push({ path: subPath, type: 'missing_in_b', valueA: summarizeValue(a[key]) });
       } else {
-        deepCompare(a[key], b[key], `${path}.${key}`, diffs, opts, depth + 1);
+        deepCompare(a[key], b[key], subPath, diffs, opts, depth + 1);
       }
     }
 
     for (const key of keysB) {
       if (diffs.length >= maxDiffs) break;
+      const subPath = `${path}.${key}`;
+      const normSubPath = subPath.replace(/\[\d+\]/g, '[*]');
+      if (ignorePaths.has(subPath) || ignorePaths.has(normSubPath)) continue;
+
       if (!keysA.has(key)) {
-        diffs.push({ path: `${path}.${key}`, type: 'missing_in_a', valueB: summarizeValue(b[key]) });
+        diffs.push({ path: subPath, type: 'missing_in_a', valueB: summarizeValue(b[key]) });
       }
     }
     return diffs;

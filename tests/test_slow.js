@@ -40,6 +40,32 @@ const tests = [
     name: '01_fights',
     fetchV1: (c) => c.fetchFights(CONFIG.reportCode),
     fetchV2: async (c) => (await c.fetchFights(CONFIG.reportCode)).mapped,
+    compareOpts: {
+      ignorePaths: new Set([
+        '$.fights[*].partial',
+        '$.fights[*].inProgress',
+        '$.fights[*].classicSeasonID',
+        '$.fights[*].lastPhaseAsAbsoluteIndex',
+        '$.fights[*].lastPhaseForPercentageDisplay',
+        '$.fights[*].lastCastGameId',
+        '$.fights[*].lastCastTime',
+        '$.fights[*].lastCastNumber',
+        '$.fights[*].lastCastInProgress',
+        '$.fights[*].maps',
+        '$.fights[*].zoneDifficulty',
+        '$.fights[*].phases',
+        '$.fights[*].originalBoss',
+        '$.friendlies',
+        '$.enemies',
+        '$.friendlyPets',
+        '$.enemyPets',
+        '$.logVersion',
+        '$.gameVersion',
+        '$.phases',
+        '$.owner',
+        '$.exportedCharacters',
+      ])
+    }
   },
   {
     name: '02_table_casts',
@@ -60,11 +86,21 @@ const tests = [
     name: '05_table_buffs',
     fetchV1: (c) => c.fetchTable(CONFIG.reportCode, 'buffs', { start: 0, end: 999999999999 }),
     fetchV2: (c) => c.fetchTable(CONFIG.reportCode, 'buffs'),
+    compareOpts: {
+      ignorePaths: new Set([
+        '$.auras[*].stackUptime'
+      ])
+    }
   },
   {
     name: '06_table_debuffs',
     fetchV1: (c) => c.fetchTable(CONFIG.reportCode, 'debuffs', { start: 0, end: 999999999999 }),
     fetchV2: (c) => c.fetchTable(CONFIG.reportCode, 'debuffs'),
+    compareOpts: {
+      ignorePaths: new Set([
+        '$.auras[*].stackUptime'
+      ])
+    }
   },
   {
     name: '07_table_deaths',

@@ -402,6 +402,8 @@ function wclV2FetchFights_(auth, reportCode, options) {
     '        enemyNPCs { id gameID }' +
     '        friendlyPets { id gameID }' +
     '        gameZone { id name }' +
+    '        difficulty' +
+    '        size' +
     '      }' +
     '      masterData {' +
     '        actors {' +
@@ -560,6 +562,7 @@ function wclV2GetEventDataType_(v1DataType) {
 function wclV2MapFightsToV1_(graphqlReport) {
   var v1 = {
     title: graphqlReport.title || '',
+    lang: graphqlReport.lang || 'en',
     start: graphqlReport.startTime,
     end: graphqlReport.endTime,
     zone: graphqlReport.zone ? graphqlReport.zone.id : 0,
@@ -572,19 +575,33 @@ function wclV2MapFightsToV1_(graphqlReport) {
     for (var i = 0; i < graphqlReport.fights.length; i++) {
       var f = graphqlReport.fights[i];
       var fightZone = f.gameZone || graphqlReport.zone || {};
-      v1.fights.push({
+      var isBoss = f.encounterID && f.encounterID > 0;
+      var fightObj = {
         id: f.id,
         start_time: f.startTime,
         end_time: f.endTime,
         boss: f.encounterID || 0,
-        originalBoss: f.originalEncounterID || f.encounterID || 0,
-        kill: (f.encounterID && f.encounterID > 0) ? (f.kill || false) : undefined,
         name: f.name || '',
-        fightPercentage: f.fightPercentage !== undefined && f.fightPercentage !== null ? Math.round(f.fightPercentage * 100) : 0,
-        bossPercentage: f.bossPercentage !== undefined && f.bossPercentage !== null ? Math.round(f.bossPercentage * 100) : 0,
         zoneID: fightZone.id || 0,
         zoneName: fightZone.name || ''
-      });
+      };
+      if (isBoss) {
+        fightObj.originalBoss = f.originalEncounterID || f.encounterID || 0;
+        fightObj.kill = f.kill || false;
+        if (f.fightPercentage !== undefined && f.fightPercentage !== null) {
+          fightObj.fightPercentage = Math.round(f.fightPercentage * 100);
+        }
+        if (f.bossPercentage !== undefined && f.bossPercentage !== null) {
+          fightObj.bossPercentage = Math.round(f.bossPercentage * 100);
+        }
+        if (f.difficulty !== undefined && f.difficulty !== null) {
+          fightObj.difficulty = f.difficulty;
+        }
+        if (f.size !== undefined && f.size !== null) {
+          fightObj.size = f.size;
+        }
+      }
+      v1.fights.push(fightObj);
     }
   }
 
