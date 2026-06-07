@@ -9,9 +9,15 @@
  */
 
 import 'dotenv/config';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
 import { V1Client } from './lib/v1_client.js';
 import { V2Client } from './lib/v2_client.js';
 import { deepCompare, summarizeDiffs, formatResultMarkdown } from './lib/compare.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const CONFIG = {
   v1ApiKey: process.env.WCL_V1_API_KEY,
@@ -87,7 +93,78 @@ const tests = [
   }
 ];
 
+function generateReport(results, elapsed, isComplete = false) {
+  let md = `# WCL V1 ↔ V2 Slow-Paced Comparison Test Report\n\n`;
+  md += `**Report Code**: \`${CONFIG.reportCode}\`\n`;
+  md += `**Run Time**: ${new Date().toISOString()}\n`;
+  if (isComplete) {
+    md += `**Status**: ✅ Completed\n`;
+    md += `**Duration**: ${elapsed}s\n\n`;
+  } else {
+    md += `**Status**: ⏳ Running...\n`;
+    md += `**Elapsed Time**: ${elapsed}s\n\n`;
+  }
+
+  md += `## Summary\n\n`;
+  md += `| Test | Status | Details |\n`;
+  md += `|------|--------|---------|\n`;
+
+  let totalPass = 0;
+  let totalFail = 0;
+  let totalSkipped = 0;
+  let totalPending = 0;
+
+  for (const r of results) {
+    let statusStr = '';
+    let detailStr = '';
+    if (r.status === 'pending') {
+      statusStr = '⏳ PENDING';
+      detailStr = 'Waiting to run...';
+      totalPending++;
+    } else if (r.status === 'running') {
+      statusStr = '⚡ RUNNING';
+      detailStr = 'Currently checking...';
+      totalPending++;
+    } else if (r.skipped) {
+      statusStr = '⏭️ SKIPPED';
+      detailStr = r.error || 'Fetch failed';
+      totalSkipped++;
+    } else if (r.passed) {
+      statusStr = '✅ PASS';
+      detailStr = 'No differences found';
+      totalPass++;
+    } else {
+      statusStr = `❌ FAIL (${r.summary?.totalDiffs || 0} diffs)`;
+      detailStr = `Found mismatches`;
+      totalFail++;
+    }
+    md += `| ${r.name} | ${statusStr} | ${detailStr} |\n`;
+  }
+
+  md += `\n**Total**: ${totalPass} passed, ${totalFail} failed, ${totalSkipped} skipped`;
+  if (totalPending > 0) {
+    md += `, ${totalPending} pending/running`;
+  }
+  md += `\n\n`;
+
+  // Detailed diffs
+  md += `---\n\n## Detailed Comparison Results\n\n`;
+  let hasDetails = false;
+  for (const r of results) {
+    if (r.status !== 'pending' && r.status !== 'running' && r.summary && !r.passed) {
+      md += formatResultMarkdown(r.summary);
+      hasDetails = true;
+    }
+  }
+  if (!hasDetails) {
+    md += `*No detailed differences to show yet.*\n`;
+  }
+
+  return md;
+}
+
 async function main() {
+  const startTime = Date.now();
   const filter = process.argv[2];
   const activeTests = filter 
     ? tests.filter(t => t.name.toLowerCase().includes(filter.toLowerCase()))
@@ -114,14 +191,43 @@ async function main() {
     process.exit(1);
   }
 
+  // Initialize all results to pending status
+  const results = activeTests.map(t => ({
+    name: t.name,
+    status: 'pending',
+    passed: false,
+    skipped: false,
+    summary: null,
+    error: null
+  }));
+
+  const resultsDir = join(__dirname, 'results');
+  if (!existsSync(resultsDir)) mkdirSync(resultsDir, { recursive: true });
+  const reportPath = join(resultsDir, 'comparison_report.md');
+
+  // Helper function to write to report file
+  const writeReportFile = (isComplete = false) => {
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    const md = generateReport(results, elapsed, isComplete);
+    writeFileSync(reportPath, md);
+  };
+
+  // Write initial report file immediately
+  writeReportFile(false);
+  log(`📄 Initial report file written/initialized at: ${reportPath}`);
+
   for (let i = 0; i < activeTests.length; i++) {
     const t = activeTests[i];
+    results[i].status = 'running';
+    writeReportFile(false);
+
     console.log(`\n${'─'.repeat(40)}`);
     log(`[${i + 1}/${activeTests.length}] Running comparison for: ${t.name}`);
     console.log(`${'─'.repeat(40)}`);
 
     let v1Data = null;
     let v2Data = null;
+    let errorMsg = null;
 
     // Fetch V1
     try {
@@ -130,6 +236,7 @@ async function main() {
       log(`✅ V1 fetch success`);
     } catch (err) {
       log(`❌ V1 fetch failed: ${err.message}`);
+      errorMsg = `V1 Error: ${err.message}`;
     }
 
     // Wait to pace
@@ -143,11 +250,13 @@ async function main() {
       log(`✅ V2 fetch success`);
     } catch (err) {
       log(`❌ V2 fetch failed: ${err.message}`);
+      errorMsg = errorMsg ? `${errorMsg} | V2 Error: ${err.message}` : `V2 Error: ${err.message}`;
     }
 
+    let summary = null;
     if (v1Data && v2Data) {
       const diffs = deepCompare(v1Data, v2Data, '$', [], t.compareOpts || {});
-      const summary = summarizeDiffs(`${t.name}: V1 ↔ V2`, diffs);
+      summary = summarizeDiffs(`${t.name}: V1 ↔ V2`, diffs);
       if (summary.passed) {
         log(`🎉 PASS: V1 and V2 mapping match perfectly!`);
       } else {
@@ -156,13 +265,36 @@ async function main() {
       }
     }
 
+    // Update results array entry
+    results[i].status = 'completed';
+    results[i].passed = summary ? summary.passed : false;
+    results[i].skipped = !v1Data || !v2Data;
+    results[i].summary = summary;
+    results[i].error = errorMsg;
+
+    // Write updated report to file after each checked test
+    writeReportFile(false);
+    log(`📄 Progress saved to: ${reportPath}`);
+
     if (i < activeTests.length - 1) {
       log(`Pacing for ${SLEEP_MS}ms before next test...`);
       await sleep(SLEEP_MS);
     }
   }
 
-  log(`\nSlow comparison test run completed.`);
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  log(`\nSlow comparison test run completed in ${elapsed}s.`);
+
+  // Write final completed report
+  writeReportFile(true);
+  log(`📄 Final report saved to: ${reportPath}`);
+
+  const totalFail = results.filter(r => !r.skipped && !r.passed).length;
+  if (totalFail > 0) {
+    process.exit(1);
+  } else {
+    process.exit(0);
+  }
 }
 
 main().catch(err => {
