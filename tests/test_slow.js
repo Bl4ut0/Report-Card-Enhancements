@@ -119,8 +119,8 @@ const tests = [
   },
   {
     name: '10_table_resources_gains',
-    fetchV1: (c) => c.fetchTable(CONFIG.reportCode, 'resources-gains', { start: 0, end: 999999999999 }),
-    fetchV2: (c) => c.fetchTable(CONFIG.reportCode, 'resources-gains'),
+    fetchV1: (c) => c.fetchTable(CONFIG.reportCode, 'resources-gains', { start: 0, end: 999999999999, abilityid: 100 }),
+    fetchV2: (c) => c.fetchTable(CONFIG.reportCode, 'resources-gains', { abilityid: 100 }),
   },
   {
     name: '11_table_summary',
