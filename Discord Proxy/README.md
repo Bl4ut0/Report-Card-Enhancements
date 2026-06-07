@@ -39,10 +39,10 @@ Target source file in a local ignored source snapshot, if you keep one:
 Current Source/CLA/v1.6.0a/General.gs
 ```
 
-Committed reference implementation:
+Generated reference implementation:
 
 ```text
-Discord Proxy/examples/CLA/TBC/v1.6.0a/General.gs
+RCE Replacements/CLA/TBC/v1.6.0a/General.gs
 ```
 
 Target function:

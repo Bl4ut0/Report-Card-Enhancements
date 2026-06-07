@@ -71,7 +71,18 @@ For V2 GraphQL, use:
 
 Only Warcraft Logs hosts are allowed. The Worker rejects arbitrary target hosts.
 
+## Apps Script Integration
+
+To route your sheet's WCL requests through the proxy:
+
+1. Copy [WCL_Compat.gs](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/V2%20Wrapper/shared/WCL_Compat.gs) (or the generated `wrapper.gs` from `RCE Replacements/`) into your Apps Script project.
+2. In the Google Apps Script editor, navigate to **Project Settings -> Script Properties** and add:
+   - `WCL_PROXY_WORKER_URL`: Set to your deployed Cloudflare Worker endpoint (e.g. `https://YOUR_WORKER.workers.dev/wcl`).
+   - `WCL_PROXY_SECRET`: Set to the same secret value configured as the `WCL_PROXY_SECRET` on the Cloudflare Worker.
+3. No further modifications are required! The compatibility wrapper will automatically detect these properties and route WCL V1 and V2 requests through the proxy.
+
 ## Current State
 
 This is a framework scaffold. It includes target validation, shared-secret validation, bounded retries, `Retry-After` support, and optional GET caching. It does not yet implement a Durable Object queue.
+
 
