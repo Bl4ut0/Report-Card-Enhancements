@@ -71,15 +71,66 @@ For V2 GraphQL, use:
 
 Only Warcraft Logs hosts are allowed. The Worker rejects arbitrary target hosts.
 
-## Apps Script Integration
+## Standalone Apps Script Integration (V1 REST Proxy Only)
 
-To route your sheet's WCL requests through the proxy:
+If you want to keep using the legacy WCL V1 REST API but route those requests through the Cloudflare Worker proxy (without using the V2 compatibility wrapper):
 
+1. **Add the Helper Function:** Copy the following helper function and paste it at the bottom of your sheet's Apps Script project (e.g., in `General.gs` or `Helpers.gs`):
+
+```javascript
+function fetchWarcraftLogsViaProxy_(url, options) {
+  options = options || {};
+
+  var props = PropertiesService.getScriptProperties();
+  var workerUrl = props.getProperty('WCL_PROXY_WORKER_URL');
+  var proxySecret = props.getProperty('WCL_PROXY_SECRET');
+
+  if (!workerUrl)
+    throw new Error('WCL_PROXY_WORKER_URL Script Property is required.');
+
+  var envelope = {
+    url: url,
+    method: options.method || 'GET'
+  };
+
+  if (options.headers)
+    envelope.headers = options.headers;
+
+  if (options.payload !== undefined)
+    envelope.body = options.payload;
+
+  return UrlFetchApp.fetch(workerUrl, {
+    method: 'POST',
+    contentType: 'application/json',
+    headers: {
+      'x-wcl-proxy-secret': proxySecret || ''
+    },
+    payload: JSON.stringify(envelope),
+    muteHttpExceptions: true
+  });
+}
+```
+
+2. **Route Core Requests:** In your sheet's source files, locate any occurrences of direct `UrlFetchApp.fetch` that query Warcraft Logs API endpoints. For example, replace:
+   ```javascript
+   var response = UrlFetchApp.fetch(url, options);
+   ```
+   with:
+   ```javascript
+   var response = fetchWarcraftLogsViaProxy_(url, options);
+   ```
+
+3. **Configure Script Properties:** In the Google Apps Script editor, navigate to **Project Settings -> Script Properties** and add:
+   - `WCL_PROXY_WORKER_URL`: Set to your deployed Cloudflare Worker endpoint (e.g., `https://YOUR_WORKER.workers.dev/wcl`).
+   - `WCL_PROXY_SECRET`: Set to the same secret value configured on the Cloudflare Worker.
+
+## Combined Integration (Recommended)
+
+If you are using the V2 Compatibility Wrapper:
 1. Copy [WCL_Compat.gs](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/V2%20Wrapper/shared/WCL_Compat.gs) (or the generated `wrapper.gs` from `RCE Replacements/`) into your Apps Script project.
-2. In the Google Apps Script editor, navigate to **Project Settings -> Script Properties** and add:
-   - `WCL_PROXY_WORKER_URL`: Set to your deployed Cloudflare Worker endpoint (e.g. `https://YOUR_WORKER.workers.dev/wcl`).
-   - `WCL_PROXY_SECRET`: Set to the same secret value configured as the `WCL_PROXY_SECRET` on the Cloudflare Worker.
-3. No further modifications are required! The compatibility wrapper will automatically detect these properties and route WCL V1 and V2 requests through the proxy.
+2. Configure your `WCL_PROXY_WORKER_URL` and `WCL_PROXY_SECRET` Script Properties.
+3. The wrapper has proxy envelope wrapping built-in and will automatically route both V1 and V2 queries through the Worker when these properties are present.
+
 
 ## Current State
 

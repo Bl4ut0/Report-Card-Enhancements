@@ -33,13 +33,15 @@ v1:api_key
 v2:client_id:client_secret
 ```
 
-## Intended User Flow
+## Standalone Deployment (Direct Mode / No Proxy)
 
-1. Identify the game version or expansion.
-2. Identify the tool: CLA or RPB.
-3. Identify the upstream form/source version.
-4. Copy only the matching files from `replacements/`.
-5. Enter either a V1 API key or V2 `client_id:client_secret` in the existing API key slot.
+To use the Warcraft Logs V2 Wrapper directly (without setting up a Cloudflare Worker proxy):
+
+1. **Add the Compatibility Wrapper:** Copy [WCL_Compat.gs](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/V2%20Wrapper/shared/WCL_Compat.gs) into your Google Apps Script project.
+2. **Apply Replacements:** Copy the modified files for your expansion/version from the `replacements/` directory (e.g., [replacements/TBC/CLA/v1.6.0a/](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/V2%20Wrapper/replacements/TBC/CLA/v1.6.0a/)) into your Apps Script project, overwriting the original files.
+3. **Configure Credentials:** In your Google Sheet (on the `Instructions` tab), enter your WCL V2 credentials `client_id:client_secret` into the existing Warcraft Logs API key field.
+4. **Leave Properties Empty:** Ensure that the Script Properties `WCL_PROXY_WORKER_URL` and `WCL_PROXY_SECRET` are left empty or deleted. The wrapper will automatically detect this and route V2 GraphQL queries directly to Warcraft Logs.
+
 
 ## Current State
 
