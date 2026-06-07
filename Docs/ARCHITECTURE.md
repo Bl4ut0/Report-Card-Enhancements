@@ -32,13 +32,13 @@ Automation combines those physical boundaries into an expansion lane:
 Committed layers:
 
 ```text
-Worker Proxy/
+Discord Proxy/
   Cloudflare Worker relay, source-level examples, and Worker-specific docs.
 
 WCL Proxy/
   Warcraft Logs API proxy scaffold for controlled egress, retries, backoff, and future request pacing.
 
-Automations/
+n8n Automations/
   Patch-only Apps Script files, setup docs, and patch changelog.
 
 V2 Wrapper/
@@ -172,8 +172,8 @@ There are two supported approaches:
 
 | Option | Location | When to Use |
 |---|---|---|
-| Source-level proxy parser | `Worker Proxy/examples/` | When preparing or applying a small CLA/RPB source change is acceptable. |
-| Patch-only wrapper/helper | `Automations/Shared_DiscordWebhook.gs` | When core source should remain untouched and export buttons can call wrapper functions. |
+| Source-level proxy parser | `Discord Proxy/examples/` | When preparing or applying a small CLA/RPB source change is acceptable. |
+| Patch-only wrapper/helper | `n8n Automations/Shared_DiscordWebhook.gs` | When core source should remain untouched and export buttons can call wrapper functions. |
 
 For n8n-driven runs, the preferred approach is to let the sheets own public announcements while n8n owns queueing, locks, retries, and callback handling.
 

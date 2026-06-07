@@ -21,7 +21,7 @@ Committed files:
 
 ```text
 Report Card Enhancements/
-  Worker Proxy/
+  Discord Proxy/
     README.md
     docs/
       CHANGELOG.md
@@ -38,7 +38,7 @@ Report Card Enhancements/
       Shared_WCLProxy.gs
     worker.js
 
-  Automations/
+  n8n Automations/
     README.md
     docs/
       CHANGELOG.md
@@ -65,28 +65,21 @@ Report Card Enhancements/
 
   Docs/
     ARCHITECTURE.md
+    DESIGN_FRAMEWORK.md
     KNOWN_ISSUES.md
     VERSION_ORGANIZATION.md
 
-  Combined Source/
+  RCE Replacements/
     CLA/
       TBC/
         v1.6.0a/
           <patched-files>.gs
           wrapper.gs
-          worker/
-            worker.js
-            wrangler.toml
-            README.md
     RPB/
       TBC/
         v1.6.0a/
           <patched-files>.gs
           wrapper.gs
-          worker/
-            worker.js
-            wrangler.toml
-            README.md
 ```
 
 Local-only ignored folders may exist in a working checkout:
@@ -106,12 +99,12 @@ Original Code/
 | Layer | Owned Here? | Notes |
 |---|---:|---|
 | CLA/RPB upstream behavior | No | Core tools are third-party and should be treated as upstream source. |
-| `Combined Source/` | Yes | Generated deployment-ready outputs (patches, unified wrapper, and worker packages). |
+| `RCE Replacements/` | Yes | Generated deployment-ready outputs (patches, unified wrapper, and worker packages). |
 | `Current Source/` snapshots | Local only | Ignored source snapshots used for private/local review. |
 | `Original Code/` snapshots | Local only | Ignored upstream/reference snapshots. |
-| `Worker Proxy/` | Yes | Cloudflare Worker relay and source-level proxy examples. |
+| `Discord Proxy/` | Yes | Cloudflare Worker relay and source-level proxy examples. |
 | `WCL Proxy/` | Yes | Warcraft Logs API proxy scaffold for retries, backoff, allowlisting, and future queueing. |
-| `Automations/` | Yes | Apps Script patch files for automation and orchestration. |
+| `n8n Automations/` | Yes | Apps Script patch files for automation and orchestration. |
 | `V2 Wrapper/` | Yes | Warcraft Logs V1/V2 compatibility wrapper and version-specific replacement sets. |
 | `Docs/` | Yes | Project guidance, registry, and troubleshooting. |
 
@@ -137,4 +130,4 @@ Manual and automatic runs should not fork into separate operational systems. The
 
 ## Version Notes
 
-The active committed examples are currently TBC-oriented `v1.6.0a` examples. Version and era support is tracked in `Docs/VERSION_ORGANIZATION.md`. Worker Proxy, WCL Proxy, automation patch, and V2 Wrapper versions are tracked inside their own folders.
+The active committed examples are currently TBC-oriented `v1.6.0a` examples. Version and era support is tracked in `Docs/VERSION_ORGANIZATION.md`. Discord Proxy, WCL Proxy, automation patch, and V2 Wrapper versions are tracked inside their own folders.

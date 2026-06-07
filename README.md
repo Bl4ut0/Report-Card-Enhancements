@@ -4,24 +4,24 @@ Helper scripts, Cloudflare Worker proxy support, Warcraft Logs API request-contr
 
 This repo is organized around five committed enhancement projects plus shared documentation:
 
-- `Worker Proxy/` contains the Cloudflare Worker relay and source-level examples for Discord webhook delivery.
-- `WCL Proxy/` contains the Warcraft Logs API proxy scaffold for controlled egress, retries, and future request pacing.
-- `Combined Proxy/` contains the merged Cloudflare Worker combining both Discord Webhook Relay and Warcraft Logs API Proxy into a single deployment footprint.
-- `Automations/` contains Apps Script patch files and n8n support files.
+- `Discord Proxy/` contains the Cloudflare Worker relay for Discord webhook delivery (retained for documentation/sub-system breakdown).
+- `WCL Proxy/` contains the Warcraft Logs API proxy scaffold for controlled egress (retained for documentation/sub-system breakdown).
+- `Combined Proxy/` contains the merged Cloudflare Worker combining both Discord Webhook Relay and Warcraft Logs API Proxy into a single deployment footprint (clean cloneable folder for Cloudflare deploy).
+- `n8n Automations/` contains Apps Script patch files and n8n support files.
 - `V2 Wrapper/` contains Warcraft Logs V1/V2 compatibility wrapper scaffolding and version-specific replacement sets.
-- `Combined Source/` contains the generated, self-contained deployment outputs (patches, unified `wrapper.gs` facade, and worker package).
+- `RCE Replacements/` contains the generated, self-contained deployment outputs (patches and unified `wrapper.gs` facade).
 - `Docs/` contains repo-level context and cross-cutting notes.
 
 ## Folder Guide
 
 | Folder | Purpose |
 |---|---|
-| `Worker Proxy/` | Cloudflare Worker relay plus CLA/RPB example files with proxy support applied. |
-| `WCL Proxy/` | Warcraft Logs API proxy scaffold for retry, backoff, allowlisting, and future queueing. |
-| `Combined Proxy/` | Consolidated Cloudflare Worker proxy that runs both Discord webhook relaying and Warcraft Logs API proxying from a single worker deployment. |
-| `Automations/` | Apps Script patch files and n8n compose example/setup docs. |
+| `Discord Proxy/` | Cloudflare Worker relay for Discord webhook delivery. Docs only; standalone examples are consolidated in `RCE Replacements/`. |
+| `WCL Proxy/` | Warcraft Logs API proxy scaffold for retry, backoff, and allowlisting. Docs only; standalone examples are consolidated in `RCE Replacements/`. |
+| `Combined Proxy/` | Consolidated Cloudflare Worker proxy that runs both Discord webhook relaying and Warcraft Logs API proxying. Clean, one-click deploy directory. |
+| `n8n Automations/` | Apps Script patch files and n8n compose example/setup docs. |
 | `V2 Wrapper/` | Warcraft Logs API compatibility wrapper and expansion/version-specific replacement structure. |
-| `Combined Source/` | Generated self-contained output files (Google Sheets `.gs` replacements, unified `wrapper.gs`, and local `worker/` templates). |
+| `RCE Replacements/` | Generated self-contained output files (Google Sheets `.gs` replacements and unified `wrapper.gs`). |
 | `Docs/` | Project architecture, setup notes, patch registry, and troubleshooting. |
 
 ## Local-Only Folders
@@ -45,8 +45,8 @@ Docs/SHEET_CODE.md
 For Discord webhook proxy support, start here:
 
 ```text
-Worker Proxy/README.md
-Worker Proxy/docs/CHANGELOG.md
+Discord Proxy/README.md
+Discord Proxy/docs/CHANGELOG.md
 ```
 
 For Warcraft Logs request-control proxy work, start here:
@@ -59,8 +59,8 @@ WCL Proxy/docs/RATE_LIMITING.md
 For n8n automation patch work, start here:
 
 ```text
-Automations/README.md
-Automations/docs/CHANGELOG.md
+n8n Automations/README.md
+n8n Automations/docs/CHANGELOG.md
 ```
 
 For Warcraft Logs V1/V2 wrapper work, start here:
@@ -70,10 +70,11 @@ V2 Wrapper/README.md
 V2 Wrapper/docs/MIGRATION_NOTES.md
 ```
 
-For the broader system map, start here:
+For the broader system map and developer workflow rules, start here:
 
 ```text
 Docs/OVERVIEW.md
+Docs/DESIGN_FRAMEWORK.md
 Docs/VERSION_ORGANIZATION.md
 ```
 
@@ -85,7 +86,7 @@ Manual form submissions and automatic WarcraftLogs group monitoring are input mo
 
 n8n owns orchestration only: intake, queueing, locks, callbacks, and retry decisions. Public announcements should be executed by the sheet-side export/notification process.
 
-Patch files are designed to be uploaded beside the live Apps Script files. They should extend behavior without editing the upstream core logic. When source-level examples are needed, use the committed examples under `Worker Proxy/examples/`.
+Patch files are designed to be uploaded beside the live Apps Script files. They should extend behavior without editing the upstream core logic. When source-level examples are needed, use the generated source files under `RCE Replacements/`.
 
 WCL Proxy files are for controlled Warcraft Logs API egress. They should pace and retry requests, not bypass Warcraft Logs limits.
 
@@ -123,7 +124,7 @@ Community Discord: https://discord.gg/nGvt5zH
 | Version / Era | CLA Upstream Credit | RPB Upstream Credit | Repo Release State |
 |---|---|---|---|
 | Vanilla | @Shariva | @Shariva | Scaffold only; no committed version-specific patches/examples yet. |
-| TBC | @Shariva | @Shariva | Worker Proxy examples committed for CLA/RPB `v1.6.0a`; V2 Wrapper fully implemented/verified for both CLA and RPB `v1.6.0a` using V2 credentials; WCL Proxy scaffolds exist; automation patches are still generic pre-1.0. |
+| TBC | @Shariva | @Shariva | Unified wrapper and RCE Replacements generated for CLA/RPB `v1.6.0a`; V2 Wrapper fully implemented/verified for both CLA and RPB `v1.6.0a` using V2 credentials; WCL Proxy scaffolds exist; automation patches are still generic pre-1.0. |
 | Season of Discovery | Community, mainly @Tallia / @Pazrea | Community, mainly @Tallia / @Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
 | Wrath of the Lich King | @Shariva | @Shariva | Scaffold only; no committed version-specific patches/examples yet. |
 | Cataclysm | Community CLA managed by @BZ, with substantial coding by @Salino | No known community RPB version | CLA scaffold only; no RPB path unless a community RPB appears. |

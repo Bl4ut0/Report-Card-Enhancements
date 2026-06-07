@@ -4,8 +4,8 @@ const path = require('path');
 const ROOT_DIR = __dirname;
 const CURRENT_SOURCE_DIR = path.join(ROOT_DIR, 'Current Source');
 const V2_WRAPPER_DIR = path.join(ROOT_DIR, 'V2 Wrapper');
-const AUTOMATIONS_DIR = path.join(ROOT_DIR, 'Automations');
-const OUTPUT_DIR = path.join(ROOT_DIR, 'Combined Source');
+const AUTOMATIONS_DIR = path.join(ROOT_DIR, 'n8n Automations');
+const OUTPUT_DIR = path.join(ROOT_DIR, 'RCE Replacements');
 
 // Helper to ensure directory exists
 function ensureDir(dirPath) {
@@ -48,9 +48,9 @@ function patchRpbFiltering(filePath) {
 function main() {
   console.log('Starting Combined Codebase Build Runner...');
   
-  // Clean Combined Source output folder
+  // Clean RCE Replacements output folder
   if (fs.existsSync(OUTPUT_DIR)) {
-    console.log('Cleaning existing Combined Source directory...');
+    console.log('Cleaning existing RCE Replacements directory...');
     fs.rmSync(OUTPUT_DIR, { recursive: true, force: true });
   }
   ensureDir(OUTPUT_DIR);
@@ -168,20 +168,6 @@ var DISCORD_PROXY_SECRET_CONFIG     = null; // e.g. 'your-discord-proxy-secret'
         const combinedContent = wrapperHeader + wclCompatContent + '\n\n' + sharedDiscordContent;
         fs.writeFileSync(path.join(outputToolPath, 'wrapper.gs'), combinedContent, 'utf8');
         console.log(`  - [GENERATE] wrapper.gs (WCL Facade + Discord Relay)`);
-
-        // 3. Copy worker files to a self-contained "worker" subfolder
-        const workerOutputDir = path.join(outputToolPath, 'worker');
-        ensureDir(workerOutputDir);
-        
-        const srcWorkerDir = path.join(ROOT_DIR, 'Combined Proxy');
-        const workerFiles = ['worker.js', 'wrangler.toml', 'README.md'];
-        for (const wf of workerFiles) {
-          const srcWf = path.join(srcWorkerDir, wf);
-          if (fs.existsSync(srcWf)) {
-            copyFile(srcWf, path.join(workerOutputDir, wf));
-          }
-        }
-        console.log(`  - [COPY] Self-contained worker files to worker/`);
       }
     }
   }

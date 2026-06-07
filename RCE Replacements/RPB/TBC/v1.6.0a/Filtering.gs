@@ -556,9 +556,5 @@ function postMessageToDiscord(url, webHook, date, zone, title, type, langKeys, l
     payload: payload,
     muteHttpExceptions: false
   };
-  if (webHook.indexOf("$$$$$") > -1) {
-    UrlFetchApp.fetch(webHook.split("$$$$$")[0], params);
-    UrlFetchApp.fetch(webHook.split("$$$$$")[1], params);
-  } else
-    UrlFetchApp.fetch(webHook, params);
+  fetchDiscordWebhook_(webHook, params);
 }

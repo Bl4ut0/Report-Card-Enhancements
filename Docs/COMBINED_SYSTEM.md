@@ -41,7 +41,7 @@ graph TD
 
 ---
 
-## 2. Combined Worker Proxy
+## 2. Combined Discord Proxy
 
 The **Combined Proxy Worker** ([Combined Proxy/worker.js](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/worker.js)) routes traffic dynamically based on paths and headers:
 
@@ -84,7 +84,7 @@ Configure these in [Combined Proxy/wrangler.toml](file:///c:/Dev%20Projects/Repo
 
 ## 3. Google Apps Script Integration
 
-All auxiliary script logic is consolidated into a single file named `wrapper.gs` inside each built era/tool directory under `Combined Source/`.
+All auxiliary script logic is consolidated into a single file named `wrapper.gs` inside each built era/tool directory under `RCE Replacements/`.
 
 ### Build Runner Setup
 Because the WCL V2 Wrapper and the Discord Proxy modify the same sheet files, you must run the build script to generate the combined codebase:
@@ -94,12 +94,12 @@ node build_combined.js
 ```
 
 This script:
-1. Cleans the `Combined Source/` output folder.
+1. Cleans the `RCE Replacements/` output folder.
 2. Scans `V2 Wrapper/replacements/` to identify all expansions and versions.
 3. Automatically patches `Filtering.gs` (for RPB) and copies `General.gs` (for CLA) containing merged WCL and Discord proxy codes. It automatically strips local definitions of `fetchDiscordWebhook_` and `getDiscordWebhookRequest_` to prevent duplicate global function errors.
 4. Generates a single `wrapper.gs` file in the tool directories:
-    - `Combined Source/CLA/<Expansion>/<Version>/wrapper.gs`
-    - `Combined Source/RPB/<Expansion>/<Version>/wrapper.gs`
+    - `RCE Replacements/CLA/<Expansion>/<Version>/wrapper.gs`
+    - `RCE Replacements/RPB/<Expansion>/<Version>/wrapper.gs`
 
 ### Sheet-Side Script Properties
 Add these script properties to your Google Apps Script projects:

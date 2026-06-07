@@ -2,7 +2,7 @@
 
 Cloudflare Worker scaffold for controlled Warcraft Logs API egress, retry handling, and future request pacing.
 
-This project is separate from `Worker Proxy/`, which is only for Discord webhook delivery. The WCL Proxy exists to reduce bursty direct calls from CLA/RPB and to centralize Warcraft Logs API handling without changing the purpose of the Discord worker.
+This project is separate from `Discord Proxy/`, which is only for Discord webhook delivery. The WCL Proxy exists to reduce bursty direct calls from CLA/RPB and to centralize Warcraft Logs API handling without changing the purpose of the Discord worker.
 
 ## Purpose
 
@@ -21,12 +21,12 @@ It is not intended to evade Warcraft Logs limits. The correct long-term behavior
 ```text
 WCL Proxy/
   worker.js
-  examples/
-    Shared_WCLProxy.gs
   docs/
     RATE_LIMITING.md
     CHANGELOG.md
 ```
+
+*(Note: Standalone sheet-side code examples for this proxy have been consolidated into `RCE Replacements/` as part of the primary unified deployment workflow).*
 
 ## Worker Secrets
 

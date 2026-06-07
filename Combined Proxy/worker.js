@@ -1,5 +1,5 @@
 /**
- * Combined Cloudflare Worker Proxy for CLA/RPB.
+ * Combined Cloudflare Discord Proxy for CLA/RPB.
  * Combines both Discord Webhook Relay and Warcraft Logs API Proxy.
  *
  * Routing logic:
@@ -13,6 +13,27 @@ const ALLOWED_HOSTS = new Set([
 ]);
 
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
+
+// Global in-memory queue states for the worker isolate
+let discordLastRequestTime = 0;
+
+// Configurable queue intervals
+const DISCORD_QUEUE_INTERVAL_MS = 500;
+
+
+
+/**
+ * Helper to calculate and apply synchronous queue delay
+ */
+function getQueueDelay(lastRequestTimeRef, intervalMs) {
+  const now = Date.now();
+  let delay = 0;
+  if (lastRequestTimeRef > 0 && (now - lastRequestTimeRef) < intervalMs) {
+    delay = intervalMs - (now - lastRequestTimeRef);
+  }
+  const newLastRequestTime = (delay > 0 ? lastRequestTimeRef + intervalMs : now);
+  return { delay, newLastRequestTime };
+}
 
 export default {
   async fetch(request, env) {
@@ -48,6 +69,13 @@ async function handleDiscordProxy(request, env) {
   const receivedSecret = request.headers.get('x-proxy-secret') || '';
   if (env.DISCORD_PROXY_SECRET && receivedSecret !== env.DISCORD_PROXY_SECRET) {
     return new Response('Unauthorized', { status: 401 });
+  }
+
+  // Apply Discord rate limit queue
+  const queueState = getQueueDelay(discordLastRequestTime, DISCORD_QUEUE_INTERVAL_MS);
+  discordLastRequestTime = queueState.newLastRequestTime;
+  if (queueState.delay > 0) {
+    await sleep(queueState.delay);
   }
 
   const discordResponse = await fetch(targetUrl, {
@@ -91,107 +119,115 @@ async function handleWclProxy(request, env) {
     return new Response(validation.error, { status: validation.status });
   }
 
+  const targetUrl = new URL(envelope.url);
+  const isV2 = targetUrl.pathname === '/api/v2/client';
+
   const maxRetries = parsePositiveInteger(env.WCL_PROXY_MAX_RETRIES, 2);
-  const maxBackoffMs = parsePositiveInteger(env.WCL_PROXY_MAX_BACKOFF_MS, 10000);
+  const maxBackoffMs = parsePositiveInteger(env.WCL_PROXY_MAX_BACKOFF_MS, 15000);
   const cacheTtlSeconds = parsePositiveInteger(env.WCL_PROXY_CACHE_TTL_SECONDS, 0);
   const staleTtlSeconds = parsePositiveInteger(env.WCL_PROXY_STALE_TTL_SECONDS, 86400);
 
-  const targetRequest = buildTargetRequest(envelope);
+  // No queuing or pacing is done inside the worker. Pacing is handled client-side in Google Apps Script.
+  try {
+    const targetRequest = buildTargetRequest(envelope);
 
-  let cacheKey = null;
-  let cachedResponse = null;
-  let isFresh = false;
+    let cacheKey = null;
+    let cachedResponse = null;
+    let isFresh = false;
 
-  if (cacheTtlSeconds > 0) {
-    try {
-      cacheKey = await getCacheKey(envelope, targetRequest);
-      if (cacheKey && typeof caches !== 'undefined' && caches.default) {
-        const matched = await caches.default.match(cacheKey);
-        if (matched) {
-          cachedResponse = matched;
-          const cachedAt = Number.parseInt(matched.headers.get('x-wcl-proxy-cached-at') || '0', 10);
-          const ageMs = Date.now() - cachedAt;
-          if (ageMs < cacheTtlSeconds * 1000) {
-            isFresh = true;
+    if (cacheTtlSeconds > 0) {
+      try {
+        cacheKey = await getCacheKey(envelope, targetRequest);
+        if (cacheKey && typeof caches !== 'undefined' && caches.default) {
+          const matched = await caches.default.match(cacheKey);
+          if (matched) {
+            cachedResponse = matched;
+            const cachedAt = Number.parseInt(matched.headers.get('x-wcl-proxy-cached-at') || '0', 10);
+            const ageMs = Date.now() - cachedAt;
+            if (ageMs < cacheTtlSeconds * 1000) {
+              isFresh = true;
+            }
           }
         }
+      } catch (err) {
+        console.warn('Cache match error:', err);
       }
-    } catch (err) {
-      console.warn('Cache match error:', err);
     }
-  }
 
-  if (isFresh && cachedResponse) {
-    return withProxyHeaders(cachedResponse, 1, 'hit');
-  }
-
-  let response;
-  let attempts = 0;
-  let fetchError = null;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    attempts = attempt + 1;
-    try {
-      response = await fetch(targetRequest.clone());
-
-      if (!RETRYABLE_STATUSES.has(response.status) || attempt === maxRetries) {
-        break;
-      }
-
-      const retryAfterMs = getRetryAfterMs(response.headers.get('retry-after'), maxBackoffMs);
-      await sleep(retryAfterMs || Math.min(1000 * Math.pow(2, attempt), maxBackoffMs));
-    } catch (err) {
-      fetchError = err;
-      if (attempt === maxRetries) {
-        break;
-      }
-      await sleep(Math.min(1000 * Math.pow(2, attempt), maxBackoffMs));
+    if (isFresh && cachedResponse) {
+      return withProxyHeaders(cachedResponse, 1, 'hit');
     }
-  }
 
-  const isUpstreamError = !response || !response.ok;
-  if (isUpstreamError && cachedResponse) {
-    const fallbackResponse = withProxyHeaders(cachedResponse, attempts, 'fallback');
-    if (!response && fetchError) {
-      fallbackResponse.headers.set('x-wcl-proxy-fallback-reason', fetchError.message || 'fetch_error');
-    } else if (response) {
-      fallbackResponse.headers.set('x-wcl-proxy-fallback-reason', `status_${response.status}`);
-    }
-    return fallbackResponse;
-  }
+    let response;
+    let attempts = 0;
+    let fetchError = null;
 
-  if (!response) {
-    return new Response(`Upstream Fetch Error: ${fetchError?.message || 'Unknown error'}`, {
-      status: 502,
-      headers: {
-        'x-wcl-proxy-attempts': attempts.toString(),
-        'x-wcl-proxy-cache': 'miss',
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      attempts = attempt + 1;
+      try {
+        response = await fetch(targetRequest.clone());
+
+        if (!RETRYABLE_STATUSES.has(response.status) || attempt === maxRetries) {
+          break;
+        }
+
+        const retryAfterMs = getRetryAfterMs(response.headers.get('retry-after'), maxBackoffMs);
+        await sleep(retryAfterMs || Math.min(3000 * Math.pow(2, attempt), maxBackoffMs));
+      } catch (err) {
+        fetchError = err;
+        if (attempt === maxRetries) {
+          break;
+        }
+        await sleep(Math.min(3000 * Math.pow(2, attempt), maxBackoffMs));
       }
-    });
-  }
-
-  if (cacheTtlSeconds > 0 && cacheKey && response.ok) {
-    try {
-      if (typeof caches !== 'undefined' && caches.default) {
-        const responseText = await response.clone().text();
-        const cachedHeaders = new Headers(response.headers);
-        cachedHeaders.set('x-wcl-proxy-cached-at', Date.now().toString());
-        cachedHeaders.set('cache-control', `public, max-age=${staleTtlSeconds}`);
-
-        const cacheableResponse = new Response(responseText, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: cachedHeaders,
-        });
-
-        await caches.default.put(cacheKey, cacheableResponse);
-      }
-    } catch (err) {
-      console.warn('Cache write error:', err);
     }
-  }
 
-  return withProxyHeaders(response, attempts, 'miss');
+    const isUpstreamError = !response || !response.ok;
+    if (isUpstreamError && cachedResponse) {
+      const fallbackResponse = withProxyHeaders(cachedResponse, attempts, 'fallback');
+      if (!response && fetchError) {
+        fallbackResponse.headers.set('x-wcl-proxy-fallback-reason', fetchError.message || 'fetch_error');
+      } else if (response) {
+        fallbackResponse.headers.set('x-wcl-proxy-fallback-reason', `status_${response.status}`);
+      }
+      return fallbackResponse;
+    }
+
+    if (!response) {
+      return new Response(`Upstream Fetch Error: ${fetchError?.message || 'Unknown error'}`, {
+        status: 502,
+        headers: {
+          'x-wcl-proxy-attempts': attempts.toString(),
+          'x-wcl-proxy-cache': 'miss',
+        }
+      });
+    }
+
+    if (cacheTtlSeconds > 0 && cacheKey && response.ok) {
+      try {
+        if (typeof caches !== 'undefined' && caches.default) {
+          const responseText = await response.clone().text();
+          const cachedHeaders = new Headers(response.headers);
+          cachedHeaders.set('x-wcl-proxy-cached-at', Date.now().toString());
+          cachedHeaders.set('cache-control', `public, max-age=${staleTtlSeconds}`);
+
+          const cacheableResponse = new Response(responseText, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: cachedHeaders,
+          });
+
+          await caches.default.put(cacheKey, cacheableResponse);
+        }
+      } catch (err) {
+        console.warn('Cache write error:', err);
+      }
+    }
+
+    return withProxyHeaders(response, attempts, 'miss');
+  } finally {
+    // Concurrency queue and sleep removed from worker to prevent CPU/timeout limits
+  }
 }
 
 function validateEnvelope(envelope) {
