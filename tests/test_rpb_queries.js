@@ -67,6 +67,16 @@ async function main() {
       params: { by: "target", encounter: 0, targetid: player.id }
     },
     {
+      name: "urlBuffsKillsOnly",
+      dataType: "buffs",
+      params: { by: "target", targetid: player.id, wipes: 2, encounter: -2 }
+    },
+    {
+      name: "urlDebuffsWipesOnly",
+      dataType: "debuffs",
+      params: { hostility: 1, targetid: player.id, wipes: 1, encounter: -2 }
+    },
+    {
       name: "urlDamageTakenTop",
       dataType: "damage-taken",
       params: { by: "ability", options: 4098 }

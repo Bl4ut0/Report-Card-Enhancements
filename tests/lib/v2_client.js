@@ -371,11 +371,11 @@ export class V2Client {
    * Port of wclV2FetchTable_ (WCL_Compat.gs L339-368).
    */
   async fetchTable(reportCode, dataType, params = {}) {
-    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String, $viewBy: ViewType, $viewOptions: Int) {
+    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String, $viewBy: ViewType, $viewOptions: Int, $killType: KillType) {
       rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }
       reportData {
         report(code: $code) {
-          table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression, viewBy: $viewBy, viewOptions: $viewOptions)
+          table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression, viewBy: $viewBy, viewOptions: $viewOptions, killType: $killType)
         }
       }
     }`;
@@ -391,6 +391,14 @@ export class V2Client {
       else if (byVal === 'ability') viewByVal = 'Ability';
     }
 
+    let killTypeVal = undefined;
+    if (params.wipes !== undefined && params.encounter !== undefined && Number(params.encounter) !== 0) {
+      const wipesVal = Number(params.wipes);
+      if (wipesVal === 1) killTypeVal = 'Wipes';
+      else if (wipesVal === 2) killTypeVal = 'Kills';
+      else if (wipesVal === 0) killTypeVal = 'All';
+    }
+
     const variables = {
       code: reportCode,
       startTime: params.start !== undefined ? Number(params.start) : 0,
@@ -404,6 +412,7 @@ export class V2Client {
       filterExpression: filterExpression || undefined,
       viewBy: viewByVal,
       viewOptions: params.options !== undefined ? Number(params.options) : undefined,
+      killType: killTypeVal,
     };
 
     // Clean undefined values
@@ -423,11 +432,11 @@ export class V2Client {
    * Port of wclV2FetchEvents_ (WCL_Compat.gs L370-417).
    */
   async fetchEvents(reportCode, dataType, params = {}) {
-    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: EventDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $hostilityType: HostilityType, $limit: Int, $filterExpression: String) {
+    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: EventDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $hostilityType: HostilityType, $limit: Int, $filterExpression: String, $killType: KillType) {
       rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }
       reportData {
         report(code: $code) {
-          events(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, hostilityType: $hostilityType, limit: $limit, filterExpression: $filterExpression) {
+          events(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, hostilityType: $hostilityType, limit: $limit, filterExpression: $filterExpression, killType: $killType) {
             data
             nextPageTimestamp
           }
@@ -436,6 +445,14 @@ export class V2Client {
     }`;
 
     const filterExpression = params.filterExpression || buildFilterExpression(params);
+
+    let killTypeVal = undefined;
+    if (params.wipes !== undefined && params.encounter !== undefined && Number(params.encounter) !== 0) {
+      const wipesVal = Number(params.wipes);
+      if (wipesVal === 1) killTypeVal = 'Wipes';
+      else if (wipesVal === 2) killTypeVal = 'Kills';
+      else if (wipesVal === 0) killTypeVal = 'All';
+    }
 
     const variables = {
       code: reportCode,
@@ -448,6 +465,7 @@ export class V2Client {
       hostilityType: params.hostility !== undefined ? (params.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
       limit: params.limit !== undefined ? Number(params.limit) : 10000,
       filterExpression: filterExpression || undefined,
+      killType: killTypeVal,
     };
 
     Object.keys(variables).forEach(k => { if (variables[k] === undefined) delete variables[k]; });

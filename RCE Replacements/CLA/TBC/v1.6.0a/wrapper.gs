@@ -431,11 +431,11 @@ function wclV2FetchFights_(auth, reportCode, options) {
 }
 
 function wclV2FetchTable_(auth, reportCode, dataType, options) {
-  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String, $viewBy: ViewType, $viewOptions: Int) {' +
+  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String, $viewBy: ViewType, $viewOptions: Int, $killType: KillType) {' +
     '  rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }' +
     '  reportData {' +
     '    report(code: $code) {' +
-    '      table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression, viewBy: $viewBy, viewOptions: $viewOptions)' +
+    '      table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression, viewBy: $viewBy, viewOptions: $viewOptions, killType: $killType)' +
     '    }' +
     '  }' +
     '}';
@@ -452,7 +452,8 @@ function wclV2FetchTable_(auth, reportCode, dataType, options) {
     hostilityType: options.hostility !== undefined ? (options.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
     filterExpression: options.filterExpression !== undefined ? options.filterExpression : undefined,
     viewBy: options.viewBy !== undefined ? options.viewBy : undefined,
-    viewOptions: options.viewOptions !== undefined ? Number(options.viewOptions) : undefined
+    viewOptions: options.viewOptions !== undefined ? Number(options.viewOptions) : undefined,
+    killType: options.killType !== undefined ? options.killType : undefined
   };
   
   var rawResponse = wclV2GraphQLQuery_(auth, query, variables);
@@ -466,11 +467,11 @@ function wclV2FetchTable_(auth, reportCode, dataType, options) {
 }
 
 function wclV2FetchEvents_(auth, reportCode, dataType, options) {
-  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: EventDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $hostilityType: HostilityType, $limit: Int, $filterExpression: String) {' +
+  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: EventDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $hostilityType: HostilityType, $limit: Int, $filterExpression: String, $killType: KillType) {' +
     '  rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }' +
     '  reportData {' +
     '    report(code: $code) {' +
-    '      events(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, hostilityType: $hostilityType, limit: $limit, filterExpression: $filterExpression) {' +
+    '      events(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, hostilityType: $hostilityType, limit: $limit, filterExpression: $filterExpression, killType: $killType) {' +
     '        data' +
     '        nextPageTimestamp' +
     '      }' +
@@ -488,7 +489,8 @@ function wclV2FetchEvents_(auth, reportCode, dataType, options) {
     targetID: options.targetid !== undefined ? Number(options.targetid) : undefined,
     hostilityType: options.hostility !== undefined ? (options.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
     limit: options.limit !== undefined ? Number(options.limit) : 10000,
-    filterExpression: options.filterExpression !== undefined ? options.filterExpression : undefined
+    filterExpression: options.filterExpression !== undefined ? options.filterExpression : undefined,
+    killType: options.killType !== undefined ? options.killType : undefined
   };
   
   var rawResponse = wclV2GraphQLQuery_(auth, query, variables);
@@ -795,6 +797,12 @@ function wclTranslateV1UrlToV2GraphQL_(url, auth) {
       if (params.options !== undefined) {
         options.viewOptions = Number(params.options);
       }
+      if (params.wipes !== undefined && params.encounter !== undefined && Number(params.encounter) !== 0) {
+        var wipesVal = Number(params.wipes);
+        if (wipesVal === 1) options.killType = 'Wipes';
+        else if (wipesVal === 2) options.killType = 'Kills';
+        else if (wipesVal === 0) options.killType = 'All';
+      }
       
       var filter = wclBuildFilterExpression_(params);
       if (filter !== undefined) options.filterExpression = filter;
@@ -816,6 +824,12 @@ function wclTranslateV1UrlToV2GraphQL_(url, auth) {
       if (params.hostility !== undefined) options.hostility = Number(params.hostility);
       if (params.limit !== undefined) options.limit = Number(params.limit);
       if (params.nextpagetimestamp !== undefined) options.nextPageTimestamp = Number(params.nextpagetimestamp);
+      if (params.wipes !== undefined && params.encounter !== undefined && Number(params.encounter) !== 0) {
+        var wipesVal = Number(params.wipes);
+        if (wipesVal === 1) options.killType = 'Wipes';
+        else if (wipesVal === 2) options.killType = 'Kills';
+        else if (wipesVal === 0) options.killType = 'All';
+      }
       
       var filter = wclBuildFilterExpression_(params);
       if (filter !== undefined) options.filterExpression = filter;

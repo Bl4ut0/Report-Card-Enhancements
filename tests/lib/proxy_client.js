@@ -202,11 +202,11 @@ export class ProxyClient {
    * Fetch table data via proxy.
    */
   async fetchTable(reportCode, dataType, params = {}) {
-    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String, $viewBy: ViewType, $viewOptions: Int) {
+    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String, $viewBy: ViewType, $viewOptions: Int, $killType: KillType) {
       rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }
       reportData {
         report(code: $code) {
-          table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression, viewBy: $viewBy, viewOptions: $viewOptions)
+          table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression, viewBy: $viewBy, viewOptions: $viewOptions, killType: $killType)
         }
       }
     }`;
@@ -219,6 +219,14 @@ export class ProxyClient {
       if (byVal === 'target') viewByVal = 'Target';
       else if (byVal === 'source') viewByVal = 'Source';
       else if (byVal === 'ability') viewByVal = 'Ability';
+    }
+
+    let killTypeVal = undefined;
+    if (params.wipes !== undefined && params.encounter !== undefined && Number(params.encounter) !== 0) {
+      const wipesVal = Number(params.wipes);
+      if (wipesVal === 1) killTypeVal = 'Wipes';
+      else if (wipesVal === 2) killTypeVal = 'Kills';
+      else if (wipesVal === 0) killTypeVal = 'All';
     }
 
     const variables = {
@@ -234,6 +242,7 @@ export class ProxyClient {
       filterExpression: filterExpression || undefined,
       viewBy: viewByVal,
       viewOptions: params.options !== undefined ? Number(params.options) : undefined,
+      killType: killTypeVal,
     };
 
     Object.keys(variables).forEach(k => { if (variables[k] === undefined) delete variables[k]; });
@@ -251,11 +260,11 @@ export class ProxyClient {
    * Fetch event data via proxy.
    */
   async fetchEvents(reportCode, dataType, params = {}) {
-    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: EventDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $hostilityType: HostilityType, $limit: Int, $filterExpression: String) {
+    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: EventDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $hostilityType: HostilityType, $limit: Int, $filterExpression: String, $killType: KillType) {
       rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }
       reportData {
         report(code: $code) {
-          events(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, hostilityType: $hostilityType, limit: $limit, filterExpression: $filterExpression) {
+          events(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, hostilityType: $hostilityType, limit: $limit, filterExpression: $filterExpression, killType: $killType) {
             data
             nextPageTimestamp
           }
@@ -264,6 +273,14 @@ export class ProxyClient {
     }`;
 
     const filterExpression = params.filterExpression || buildFilterExpression(params);
+
+    let killTypeVal = undefined;
+    if (params.wipes !== undefined && params.encounter !== undefined && Number(params.encounter) !== 0) {
+      const wipesVal = Number(params.wipes);
+      if (wipesVal === 1) killTypeVal = 'Wipes';
+      else if (wipesVal === 2) killTypeVal = 'Kills';
+      else if (wipesVal === 0) killTypeVal = 'All';
+    }
 
     const variables = {
       code: reportCode,
@@ -276,6 +293,7 @@ export class ProxyClient {
       hostilityType: params.hostility !== undefined ? (params.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
       limit: params.limit !== undefined ? Number(params.limit) : 10000,
       filterExpression: filterExpression || undefined,
+      killType: killTypeVal,
     };
 
     Object.keys(variables).forEach(k => { if (variables[k] === undefined) delete variables[k]; });
