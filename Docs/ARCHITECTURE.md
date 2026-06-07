@@ -32,20 +32,23 @@ Automation combines those physical boundaries into an expansion lane:
 Committed layers:
 
 ```text
+Combined Proxy/
+  Consolidated Cloudflare Worker proxy (Discord webhook relay + WCL proxy with SHA-256 caching and fallback). Source of truth; mirrored to standalone deploy subrepo.
+
 Discord Proxy/
-  Cloudflare Worker relay, source-level examples, and Worker-specific docs.
+  Legacy standalone Discord webhook relay documentation and worker scaffold.
 
 WCL Proxy/
-  Warcraft Logs API proxy scaffold for controlled egress, retries, backoff, and future request pacing.
+  Legacy standalone Warcraft Logs proxy documentation and worker scaffold.
 
 n8n Automations/
-  Patch-only Apps Script files, setup docs, and patch changelog.
+  Patch-only Apps Script files, setup docs, and patches.
 
 V2 Wrapper/
-  Warcraft Logs V1/V2 compatibility wrapper scaffolding and version-specific replacement sets.
+  Warcraft Logs V1/V2 compatibility wrapper (WCL_Compat.gs) and version-specific replacement sets.
 
 Docs/
-  Repo-level overview, architecture, and cross-cutting troubleshooting.
+  Repo-level overview, architecture, design framework, and cross-cutting troubleshooting.
 ```
 
 Local ignored layers:
@@ -172,7 +175,7 @@ There are two supported approaches:
 
 | Option | Location | When to Use |
 |---|---|---|
-| Source-level proxy parser | `Discord Proxy/examples/` | When preparing or applying a small CLA/RPB source change is acceptable. |
+| Combined Proxy / Compiled replacements | Compiled automatically by `build_combined.js` | When deploying the sheet with fully integrated proxy routing. |
 | Patch-only wrapper/helper | `n8n Automations/Shared_DiscordWebhook.gs` | When core source should remain untouched and export buttons can call wrapper functions. |
 
 For n8n-driven runs, the preferred approach is to let the sheets own public announcements while n8n owns queueing, locks, retries, and callback handling.
@@ -195,18 +198,18 @@ Replacement sets must be organized by expansion, tool, and upstream source versi
 
 ## Warcraft Logs Proxy
 
-The WCL Proxy project is for controlled upstream Warcraft Logs API egress. It should be treated as a reliability and pacing layer, not a limit bypass.
+The Warcraft Logs Proxy (now part of the `Combined Proxy`) is for controlled upstream Warcraft Logs API egress. It should be treated as a reliability and pacing layer, not a limit bypass.
 
 ```text
 CLA/RPB source or V2 Wrapper
-  -> WCL Proxy Worker
+  -> Combined Proxy Worker (/wcl path)
      -> allowlisted Warcraft Logs API URL
      -> bounded retries for 429/502/503/504
      -> Retry-After-aware backoff
-     -> optional safe GET cache
+     -> SHA-256 query caching with stale-on-error fallback
 ```
 
-The current scaffold does not serialize requests by itself. If 429/502 pressure continues, the next design step is a Durable Object queue keyed by credential, expansion, or report code.
+Request serialization and pacing are implemented client-side directly in `WCL_Compat.gs` using script property configurations (e.g. `WCL_MIN_FETCH_INTERVAL_MS`). Worker-side queuing via Durable Objects is deprecated to avoid exceeding CPU time limits and holding connections open.
 
 ## Constraints
 

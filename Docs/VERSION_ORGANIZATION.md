@@ -13,47 +13,16 @@ Community Discord: https://discord.gg/nGvt5zH
 | Era / Version Family | CLA Upstream Credit | RPB Upstream Credit | Repo Release State |
 |---|---|---|---|
 | Vanilla | @Shariva | @Shariva | Scaffold only; no committed version-specific patches/examples yet. |
-| TBC | @Shariva | @Shariva | Discord Proxy examples and V2 Wrapper scaffolds exist for CLA/RPB `v1.6.0a`; WCL Proxy scaffold exists as a shared project; automation patches are still generic pre-1.0. |
+| TBC | @Shariva | @Shariva | V2 Wrapper and Combined Proxy fully implemented and verified for CLA/RPB `v1.6.0a` with 100% data parity. Mirrored to standalone subrepo [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) for 1-click deployment. |
 | Season of Discovery (SOD) | Community, mainly @Tallia / @Pazrea | Community, mainly @Tallia / @Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
 | Wrath of the Lich King (WOTLK) | @Shariva | @Shariva | Scaffold only; no committed version-specific patches/examples yet. |
 | Cataclysm | Community CLA managed by @BZ, with substantial coding by @Salino | No known community RPB version | CLA scaffold only; no RPB path unless a community RPB appears. |
-| Mists of Pandaria (MoP) | Community CLA managed by @BZ, with substantial coding by @Salino | Community RPB by @Tallia / @Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
+| MoP | Community CLA managed by @BZ, with substantial coding by @Salino | Community RPB by @Tallia / @Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
 
 ## Organization Rules
 
 Use explicit expansion, tool, and upstream version when adding version-specific files.
 Placeholder `.gitkeep` files keep planned expansion folders visible until the exact upstream version folder is known.
-
-Preferred shape for committed examples:
-
-```text
-Discord Proxy/
-  examples/
-    CLA/
-      Vanilla/
-        <upstream-version>/
-      TBC/
-        v1.6.0a/
-      SOD/
-        <upstream-version>/
-      WOTLK/
-        <upstream-version>/
-      Cata/
-        <upstream-version>/
-      MoP/
-        <upstream-version>/
-    RPB/
-      Vanilla/
-        <upstream-version>/
-      TBC/
-        v1.6.0a/
-      SOD/
-        <upstream-version>/
-      WOTLK/
-        <upstream-version>/
-      MoP/
-        <upstream-version>/
-```
 
 Preferred shape for version-specific automation patches, when the generic root patch files are no longer enough:
 
@@ -137,16 +106,9 @@ When adding a new era or upstream sheet version:
 2. Record whether CLA, RPB, or both exist for that expansion.
 3. Record the upstream version string exactly as shown in the sheet.
 4. Document any changed cell locations, function names, sheet names, export behavior, or Discord behavior.
-5. Update the matching component changelog when committed support changes: `Discord Proxy/docs/CHANGELOG.md`, `WCL Proxy/docs/CHANGELOG.md`, `n8n Automations/docs/CHANGELOG.md`, or `V2 Wrapper/docs/CHANGELOG.md`.
+5. Update the matching component changelog when committed support changes: `n8n Automations/docs/CHANGELOG.md` or `V2 Wrapper/docs/CHANGELOG.md`.
 
 ## Current Notes
-
-The existing committed Discord Proxy examples are TBC `v1.6.0a` examples:
-
-```text
-Discord Proxy/examples/CLA/TBC/v1.6.0a/
-Discord Proxy/examples/RPB/TBC/v1.6.0a/
-```
 
 The existing V2 Wrapper replacement scaffold starts with TBC `v1.6.0a` placeholders:
 
@@ -155,7 +117,7 @@ V2 Wrapper/replacements/TBC/CLA/v1.6.0a/
 V2 Wrapper/replacements/TBC/RPB/v1.6.0a/
 ```
 
-The generated single-file deployment outputs from `build_combined.js` are organized by Tool first to mirror the Discord Proxy example layout:
+The generated single-file deployment outputs from `build_combined.js` are organized by Tool first:
 
 ```text
 RCE Replacements/

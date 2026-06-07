@@ -67,14 +67,70 @@ def compare_workbooks(file1, file2, label):
                 print(f"   ... and {len(diffs) - 10} more differences")
 
 if __name__ == "__main__":
-    root_dir = "c:/Dev Projects/Report Card Enhancements"
+    # Dynamically find repo root relative to the script location
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
-    # 1. Compare CLA
-    cla_original = os.path.join(root_dir, "CLA for 06.03.2026 TK (Harlot) (TK in 2_27_08) on June 04, 2026 01_44_10 in Tempest Keep.xlsx")
-    cla_complete = os.path.join(root_dir, "Complete - CLA for 06.03.2026 TK (Harlot) (TK in 2_27_08) on June 04, 2026 01_44_10 in The Eye.xlsx")
-    compare_workbooks(cla_original, cla_complete, "CLA")
-    
-    # 2. Compare RPB
-    rpb_original = os.path.join(root_dir, "RPB for 06.03.2026 TK (Harlot) (TK in 2_27_08) on Thu Jun 04 2026 01_44_10 GMT+0200 (Central European Summer Time) in Tempest Keep.xlsx")
-    rpb_complete = os.path.join(root_dir, "Complete RPB for 06.03.2026 TK (Harlot) (TK in 2_27_08) on Thu Jun 04 2026 01_44_10 GMT+0200 (Central European Summer Time) in The Eye.xlsx")
-    compare_workbooks(rpb_original, rpb_complete, "RPB")
+    # Check if arguments are passed
+    if len(sys.argv) > 1:
+        if len(sys.argv) == 3:
+            file1 = sys.argv[1]
+            file2 = sys.argv[2]
+            label = "Comparison"
+            if "rpb" in file1.lower() or "rpb" in file2.lower():
+                label = "RPB"
+            elif "cla" in file1.lower() or "cla" in file2.lower():
+                label = "CLA"
+            compare_workbooks(file1, file2, label)
+        else:
+            print("Usage:")
+            print("  python tests/compare_excel.py <file_original.xlsx> <file_complete.xlsx>")
+            print("Or run without arguments to automatically match files in the project root.")
+            sys.exit(1)
+    else:
+        # Scan root directory for excel files to compare
+        files = [f for f in os.listdir(root_dir) if f.endswith(".xlsx")]
+        
+        # Helper to find matching pairs
+        def find_pair(prefix_orig, prefix_comp):
+            orig = None
+            comp = None
+            for f in files:
+                if f.startswith(prefix_comp):
+                    comp = os.path.join(root_dir, f)
+                elif f.startswith(prefix_orig):
+                    orig = os.path.join(root_dir, f)
+            return orig, comp
+
+        cla_orig, cla_comp = find_pair("CLA for", "Complete - CLA")
+        rpb_orig, rpb_comp = find_pair("RPB for", "Complete RPB")
+        
+        compared = False
+        
+        if cla_orig and cla_comp:
+            compare_workbooks(cla_orig, cla_comp, "CLA")
+            compared = True
+        else:
+            # Check for generic/fallback CLA name matches if not specific
+            cla_orig_alt = next((os.path.join(root_dir, f) for f in files if "cla" in f.lower() and "complete" not in f.lower()), None)
+            cla_comp_alt = next((os.path.join(root_dir, f) for f in files if "cla" in f.lower() and "complete" in f.lower()), None)
+            if cla_orig_alt and cla_comp_alt:
+                compare_workbooks(cla_orig_alt, cla_comp_alt, "CLA")
+                compared = True
+
+        if rpb_orig and rpb_comp:
+            compare_workbooks(rpb_orig, rpb_comp, "RPB")
+            compared = True
+        else:
+            rpb_orig_alt = next((os.path.join(root_dir, f) for f in files if "rpb" in f.lower() and "complete" not in f.lower()), None)
+            rpb_comp_alt = next((os.path.join(root_dir, f) for f in files if "rpb" in f.lower() and "complete" in f.lower()), None)
+            if rpb_orig_alt and rpb_comp_alt:
+                compare_workbooks(rpb_orig_alt, rpb_comp_alt, "RPB")
+                compared = True
+                
+        if not compared:
+            print("No Excel workbook pairs found in the root directory for auto-matching.")
+            print("\nTo compare your own sheets:")
+            print("  1. Export your sheet with V1 credentials (e.g., 'CLA_V1.xlsx')")
+            print("  2. Export the same sheet with V2 credentials (e.g., 'CLA_V2.xlsx')")
+            print("  3. Place them in the root directory and run:")
+            print("     python tests/compare_excel.py CLA_V1.xlsx CLA_V2.xlsx")

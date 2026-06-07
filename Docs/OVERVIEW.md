@@ -21,55 +21,68 @@ Committed files:
 
 ```text
 Report Card Enhancements/
-  Discord Proxy/
+  Combined Proxy/          ← Consolidated Cloudflare Worker (Discord + WCL) source files; mirrored to RCE-Proxy subrepo
     README.md
+    SYNC_GUIDE.md
+    worker.js
+    wrangler.toml
+    deploy.js
+    .github/
+      workflows/
+        deploy.yml
+
+  Discord Proxy/           ← Legacy standalone Discord webhook relay documentation and scaffold
+    README.md
+    worker.js
     docs/
       CHANGELOG.md
       DISCORD_PROXY_RELAY.md
-    worker.js
-    examples/
 
-  WCL Proxy/
+  WCL Proxy/               ← Legacy standalone Warcraft Logs proxy documentation and scaffold
     README.md
+    worker.js
+    wrangler.toml
     docs/
       CHANGELOG.md
       RATE_LIMITING.md
-    examples/
-      Shared_WCLProxy.gs
-    worker.js
 
   n8n Automations/
     README.md
+    CLA_Patch_n8n.gs
+    RPB_Patch_n8n.gs
+    Shared_Config.gs
+    Shared_DiscordWebhook.gs
+    compose.yml
+    compose.example.yml
     docs/
       CHANGELOG.md
       PATCHES.md
       N8N_INTEGRATION.md
       N8N_MCP_SETUP.md
-    compose.example.yml
-    CLA_Patch_n8n.gs
-    RPB_Patch_n8n.gs
-    Shared_Config.gs
-    Shared_DiscordWebhook.gs
 
   V2 Wrapper/
     README.md
+    shared/
+      WCL_Compat.gs
+    replacements/
+      TBC/
+        CLA/
+          v1.6.0a/
+        RPB/
+          v1.6.0a/
     docs/
       CHANGELOG.md
       INSTALLATION.md
       MIGRATION_NOTES.md
-    shared/
-      WCL_Compat.gs
-      WCL_V1.gs
-      WCL_V2.gs
-    replacements/
 
   Docs/
     ARCHITECTURE.md
     DESIGN_FRAMEWORK.md
     KNOWN_ISSUES.md
     VERSION_ORGANIZATION.md
+    OVERVIEW.md
 
-  RCE Replacements/
+  RCE Replacements/        ← Generated deployment-ready compiled outputs
     CLA/
       TBC/
         v1.6.0a/
@@ -102,8 +115,9 @@ Original Code/
 | `RCE Replacements/` | Yes | Generated deployment-ready outputs (patches, unified wrapper, and worker packages). |
 | `Current Source/` snapshots | Local only | Ignored source snapshots used for private/local review. |
 | `Original Code/` snapshots | Local only | Ignored upstream/reference snapshots. |
-| `Discord Proxy/` | Yes | Cloudflare Worker relay and source-level proxy examples. |
-| `WCL Proxy/` | Yes | Warcraft Logs API proxy scaffold for retries, backoff, allowlisting, and future queueing. |
+| `Combined Proxy/` | Yes | Consolidated Cloudflare Worker proxy and source-level proxy files. Mirrored to standalone subrepo. |
+| `Discord Proxy/` (legacy) | Yes | Legacy Worker relay and documentation. |
+| `WCL Proxy/` (legacy) | Yes | Legacy WCL API proxy scaffold and documentation. |
 | `n8n Automations/` | Yes | Apps Script patch files for automation and orchestration. |
 | `V2 Wrapper/` | Yes | Warcraft Logs V1/V2 compatibility wrapper and version-specific replacement sets. |
 | `Docs/` | Yes | Project guidance, registry, and troubleshooting. |

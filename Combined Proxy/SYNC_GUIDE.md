@@ -42,9 +42,9 @@ After making changes to `Combined Proxy/` in the monorepo, run these commands to
 
 ```powershell
 # 1. Copy updated files from monorepo to deploy repo
-#    (adjust paths if your folders are in different locations)
-$source = "C:\Dev Projects\Report Card Enhancements\Combined Proxy"
-$dest = "C:\Dev Projects\RCE-Proxy"
+#    Assumes RCE-Proxy is cloned alongside this monorepo
+$source = "."
+$dest = "../../RCE-Proxy"
 
 # Copy core files (excludes .dev.vars, .wrangler/, .git/)
 Copy-Item "$source\worker.js" "$dest\worker.js" -Force
@@ -70,7 +70,7 @@ git push origin main
 
 ```powershell
 # Copy, commit, and push in one shot
-$s="C:\Dev Projects\Report Card Enhancements\Combined Proxy"; $d="C:\Dev Projects\RCE-Proxy"; Copy-Item "$s\worker.js","$s\wrangler.toml","$s\deploy.js","$s\README.md","$s\.gitignore" $d -Force; cd $d; git add -A; git commit -m "Sync proxy update $(Get-Date -Format 'yyyy-MM-dd')" ; git push origin main
+$s="."; $d="../../RCE-Proxy"; Copy-Item "$s\worker.js","$s\wrangler.toml","$s\deploy.js","$s\README.md","$s\.gitignore" $d -Force; cd $d; git add -A; git commit -m "Sync proxy update $(Get-Date -Format 'yyyy-MM-dd')" ; git push origin main
 ```
 
 ---
