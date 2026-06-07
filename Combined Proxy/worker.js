@@ -1,5 +1,5 @@
 /**
- * Combined Cloudflare Discord Proxy for CLA/RPB.
+ * Combined Cloudflare Worker Proxy for CLA/RPB.
  * Combines both Discord Webhook Relay and Warcraft Logs API Proxy.
  *
  * Routing logic:
@@ -15,11 +15,44 @@ const ALLOWED_HOSTS = new Set([
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 
 // Global in-memory queue states for the worker isolate
+let wclActiveRequests = 0;
+let wclLastLaunchTime = 0;
 let discordLastRequestTime = 0;
 
 // Configurable queue intervals
+const DEFAULT_WCL_MAX_CONCURRENT = 5;
+const DEFAULT_WCL_LAUNCH_SPACING_MS = 300;
+const DEFAULT_WCL_V2_MAX_CONCURRENT = 15;
+const DEFAULT_WCL_V2_LAUNCH_SPACING_MS = 0;
 const DISCORD_QUEUE_INTERVAL_MS = 500;
 
+/**
+ * Helper to wait for a slot in the WCL queue while enforcing launch spacing
+ */
+async function acquireWclQueueSlot(maxConcurrent, spacingMs) {
+  while (true) {
+    const now = Date.now();
+    
+    // Check if we are under the concurrency limit
+    if (wclActiveRequests < maxConcurrent) {
+      // Check if we need to wait to satisfy the spacing interval
+      const timeSinceLastLaunch = now - wclLastLaunchTime;
+      if (timeSinceLastLaunch >= spacingMs) {
+        // We can launch!
+        wclActiveRequests++;
+        wclLastLaunchTime = now;
+        return;
+      } else {
+        // Need to wait out the remainder of the spacing interval
+        const delay = spacingMs - timeSinceLastLaunch;
+        await sleep(delay);
+      }
+    } else {
+      // Concurrency limit reached, wait and check again
+      await sleep(100);
+    }
+  }
+}
 
 
 /**
@@ -127,7 +160,15 @@ async function handleWclProxy(request, env) {
   const cacheTtlSeconds = parsePositiveInteger(env.WCL_PROXY_CACHE_TTL_SECONDS, 0);
   const staleTtlSeconds = parsePositiveInteger(env.WCL_PROXY_STALE_TTL_SECONDS, 86400);
 
-  // No queuing or pacing is done inside the worker. Pacing is handled client-side in Google Apps Script.
+  const defaultMaxConcurrent = isV2 ? DEFAULT_WCL_V2_MAX_CONCURRENT : DEFAULT_WCL_MAX_CONCURRENT;
+  const defaultSpacingMs = isV2 ? DEFAULT_WCL_V2_LAUNCH_SPACING_MS : DEFAULT_WCL_LAUNCH_SPACING_MS;
+
+  const maxConcurrent = parsePositiveInteger(isV2 ? env.WCL_V2_MAX_CONCURRENT : env.WCL_MAX_CONCURRENT, defaultMaxConcurrent);
+  const spacingMs = parsePositiveInteger(isV2 ? env.WCL_V2_LAUNCH_SPACING_MS : env.WCL_LAUNCH_SPACING_MS, defaultSpacingMs);
+
+  // Acquire queue slot
+  await acquireWclQueueSlot(maxConcurrent, spacingMs);
+
   try {
     const targetRequest = buildTargetRequest(envelope);
 
@@ -226,7 +267,7 @@ async function handleWclProxy(request, env) {
 
     return withProxyHeaders(response, attempts, 'miss');
   } finally {
-    // Concurrency queue and sleep removed from worker to prevent CPU/timeout limits
+    wclActiveRequests--;
   }
 }
 
