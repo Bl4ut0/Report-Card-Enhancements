@@ -1,0 +1,13 @@
+# Local development secrets (never commit real secrets)
+.dev.vars
+
+# Wrangler local state
+.wrangler/
+
+# Node
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db

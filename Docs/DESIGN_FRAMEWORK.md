@@ -72,20 +72,39 @@ node build_combined.js
 
 ## 4. Worker Deployment Guidelines
 
-The Cloudflare Worker proxy code is consolidated in **exactly one** directory:
-- [Combined Proxy/](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/) (contains `worker.js`, `wrangler.toml`, and `.dev.vars` for local testing).
+The Cloudflare Worker proxy code is maintained in two locations:
+
+| Location | Purpose |
+|---|---|
+| [Combined Proxy/](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/) | **Source of truth** in this monorepo. Contains `worker.js`, `wrangler.toml`, and `.dev.vars` for local testing. |
+| [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) | **Standalone deploy repo** (subrepo). Mirrors `Combined Proxy/` contents for 1-click Cloudflare deployment. Users deploy from here. |
 
 ### Deployment Rules:
-- **No Duplicate Worker Folders:** Do not replicate worker files or folders into `RCE Replacements/` or sub-system directories. Users who wish to deploy the worker must do so directly from the `Combined Proxy/` folder using Wrangler.
+- **No Duplicate Worker Folders:** Do not replicate worker files or folders into `RCE Replacements/` or sub-system directories.
 - **Pacing is Client-Side Only:** No request queuing, sleeping, or delay loops should ever be added back to the Cloudflare Worker code. Sleeping inside Workers holds connections open and exceeds CPU time/duration limits on the free tier. All pacing must remain client-side in `WCL_Compat.gs`.
+- **Sync Updates:** After modifying `Combined Proxy/`, sync changes to `RCE-Proxy` using the commands in [Combined Proxy/SYNC_GUIDE.md](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/SYNC_GUIDE.md). Pushing to `RCE-Proxy` triggers automatic redeployment for all users who forked it.
 
 ---
 
-## 5. Security & Credentials
+## 5. Testing & Verification
+
+The `tests/` directory contains tools for verifying that the V2 GraphQL compatibility layer produces identical results to the legacy V1 REST API. See the full guide at [Docs/TESTING_GUIDE.md](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Docs/TESTING_GUIDE.md).
+
+| Tool | Purpose |
+|---|---|
+| `tests/test_slow.js` | End-to-end V1 ↔ V2 API comparison across all query types (fights, tables, events) |
+| `tests/test_rpb_queries.js` | RPB-specific table query verification (uptimes, auras, viewBy, killType) |
+| `tests/compare_excel.py` | Cell-by-cell comparison of exported Excel workbooks (Original V1 vs Complete V2) |
+| `tests/inspect_tables.js` | Quick single-query inspection tool for debugging |
+
+---
+
+## 6. Security & Credentials
 
 - Never commit client IDs, client secrets, API keys, webhook URLs, proxy URLs, or secret passwords.
-- **Google Apps Script:** Configure worker URLs and secrets using **Settings -> Script Properties** inside the Google Sheet Apps Script dashboard.
-- **Cloudflare Worker:** Store secrets (`WCL_PROXY_SECRET`, `DISCORD_PROXY_SECRET`) using `npx wrangler secret put`.
+- **Excel files (`*.xlsx`)** are git-ignored. They contain local test exports only.
+- **Google Apps Script:** Configure worker URLs and secrets using **Settings → Script Properties** inside the Google Sheet Apps Script dashboard.
+- **Cloudflare Worker:** Store secrets (`WCL_PROXY_SECRET`, `DISCORD_PROXY_SECRET`) in the Cloudflare Dashboard under Worker Settings → Variables → Secrets.
 - **Local Testing:**
   - Standard environment configurations belong in `.env` inside the `tests/` directory (git-ignored).
   - Local Wrangler development variables and secrets belong in `.dev.vars` inside `Combined Proxy/` (git-ignored).

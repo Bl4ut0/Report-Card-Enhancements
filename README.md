@@ -6,7 +6,7 @@ This repo is organized around five committed enhancement projects plus shared do
 
 - `Discord Proxy/` contains the Cloudflare Worker relay for Discord webhook delivery (retained for documentation/sub-system breakdown).
 - `WCL Proxy/` contains the Warcraft Logs API proxy scaffold for controlled egress (retained for documentation/sub-system breakdown).
-- `Combined Proxy/` contains the merged Cloudflare Worker combining both Discord Webhook Relay and Warcraft Logs API Proxy into a single deployment footprint (clean cloneable folder for Cloudflare deploy).
+- `Combined Proxy/` contains the merged Cloudflare Worker combining both Discord Webhook Relay and Warcraft Logs API Proxy into a single deployment footprint. Mirrored to the standalone deploy repo at [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) for 1-click Cloudflare deployment.
 - `n8n Automations/` contains Apps Script patch files and n8n support files.
 - `V2 Wrapper/` contains Warcraft Logs V1/V2 compatibility wrapper scaffolding and version-specific replacement sets.
 - `RCE Replacements/` contains the generated, self-contained deployment outputs (patches and unified `wrapper.gs` facade).
@@ -18,10 +18,11 @@ This repo is organized around five committed enhancement projects plus shared do
 |---|---|
 | `Discord Proxy/` | Cloudflare Worker relay for Discord webhook delivery. Docs only; standalone examples are consolidated in `RCE Replacements/`. |
 | `WCL Proxy/` | Warcraft Logs API proxy scaffold for retry, backoff, and allowlisting. Docs only; standalone examples are consolidated in `RCE Replacements/`. |
-| `Combined Proxy/` | Consolidated Cloudflare Worker proxy that runs both Discord webhook relaying and Warcraft Logs API proxying. Clean, one-click deploy directory. |
+| `Combined Proxy/` | Consolidated Cloudflare Worker proxy that runs both Discord webhook relaying and Warcraft Logs API proxying. Source of truth; mirrored to [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) for user deployment. |
 | `n8n Automations/` | Apps Script patch files and n8n compose example/setup docs. |
 | `V2 Wrapper/` | Warcraft Logs API compatibility wrapper and expansion/version-specific replacement structure. |
 | `RCE Replacements/` | Generated self-contained output files (Google Sheets `.gs` replacements and unified `wrapper.gs`). |
+| `tests/` | V1 ↔ V2 API comparison test suite, RPB query verification, and Excel workbook comparison tools. See [Docs/TESTING_GUIDE.md](Docs/TESTING_GUIDE.md). |
 | `Docs/` | Project architecture, setup notes, patch registry, and troubleshooting. |
 
 ## Local-Only Folders
