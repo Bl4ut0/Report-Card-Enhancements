@@ -399,11 +399,11 @@ function wclV2FetchFights_(auth, reportCode, options) {
 }
 
 function wclV2FetchTable_(auth, reportCode, dataType, options) {
-  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String) {' +
+  var query = 'query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String, $viewBy: ViewType, $viewOptions: Int) {' +
     '  rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }' +
     '  reportData {' +
     '    report(code: $code) {' +
-    '      table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression)' +
+    '      table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression, viewBy: $viewBy, viewOptions: $viewOptions)' +
     '    }' +
     '  }' +
     '}';
@@ -418,7 +418,9 @@ function wclV2FetchTable_(auth, reportCode, dataType, options) {
     targetID: options.targetid !== undefined ? Number(options.targetid) : undefined,
     encounterID: (options.encounter !== undefined && Number(options.encounter) > 0) ? Number(options.encounter) : undefined,
     hostilityType: options.hostility !== undefined ? (options.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
-    filterExpression: options.filterExpression !== undefined ? options.filterExpression : undefined
+    filterExpression: options.filterExpression !== undefined ? options.filterExpression : undefined,
+    viewBy: options.viewBy !== undefined ? options.viewBy : undefined,
+    viewOptions: options.viewOptions !== undefined ? Number(options.viewOptions) : undefined
   };
   
   var rawResponse = wclV2GraphQLQuery_(auth, query, variables);
@@ -672,11 +674,11 @@ function wclBuildFilterExpression_(params) {
     var encounterVal = Number(params.encounter);
     if (!isNaN(encounterVal)) {
       if (encounterVal === 0) {
-        parts.push('encounter = 0');
+        parts.push('encounterID = 0');
       } else if (encounterVal === -2) {
-        parts.push('encounter != 0');
+        parts.push('encounterID != 0');
       } else if (encounterVal > 0) {
-        parts.push('encounter = ' + encounterVal);
+        parts.push('encounterID = ' + encounterVal);
       }
     }
   }
@@ -718,12 +720,7 @@ function wclBuildFilterExpression_(params) {
     }
   }
 
-  if (params.options) {
-    var optionsVal = Number(params.options);
-    if (!isNaN(optionsVal) && (optionsVal & 4096) === 4096) {
-      parts.push('ability.avoidable = true');
-    }
-  }
+
   
   return parts.length > 0 ? parts.join(' and ') : undefined;
 }
@@ -756,6 +753,16 @@ function wclTranslateV1UrlToV2GraphQL_(url, auth) {
       if (params.encounter !== undefined) options.encounter = Number(params.encounter);
       if (params.hostility !== undefined) options.hostility = Number(params.hostility);
       if (params.translate !== undefined) options.translate = (params.translate === 'true' || params.translate === true);
+      
+      if (params.by !== undefined) {
+        var byVal = params.by.toLowerCase();
+        if (byVal === 'target') options.viewBy = 'Target';
+        else if (byVal === 'source') options.viewBy = 'Source';
+        else if (byVal === 'ability') options.viewBy = 'Ability';
+      }
+      if (params.options !== undefined) {
+        options.viewOptions = Number(params.options);
+      }
       
       var filter = wclBuildFilterExpression_(params);
       if (filter !== undefined) options.filterExpression = filter;

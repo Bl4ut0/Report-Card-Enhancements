@@ -202,16 +202,24 @@ export class ProxyClient {
    * Fetch table data via proxy.
    */
   async fetchTable(reportCode, dataType, params = {}) {
-    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String) {
+    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String, $viewBy: ViewType, $viewOptions: Int) {
       rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }
       reportData {
         report(code: $code) {
-          table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression)
+          table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression, viewBy: $viewBy, viewOptions: $viewOptions)
         }
       }
     }`;
 
     const filterExpression = params.filterExpression || buildFilterExpression(params);
+
+    let viewByVal = undefined;
+    if (params.by) {
+      const byVal = params.by.toLowerCase();
+      if (byVal === 'target') viewByVal = 'Target';
+      else if (byVal === 'source') viewByVal = 'Source';
+      else if (byVal === 'ability') viewByVal = 'Ability';
+    }
 
     const variables = {
       code: reportCode,
@@ -224,6 +232,8 @@ export class ProxyClient {
       encounterID: (params.encounter !== undefined && Number(params.encounter) > 0) ? Number(params.encounter) : undefined,
       hostilityType: params.hostility !== undefined ? (params.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
       filterExpression: filterExpression || undefined,
+      viewBy: viewByVal,
+      viewOptions: params.options !== undefined ? Number(params.options) : undefined,
     };
 
     Object.keys(variables).forEach(k => { if (variables[k] === undefined) delete variables[k]; });

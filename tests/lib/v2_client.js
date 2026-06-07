@@ -193,11 +193,11 @@ export function buildFilterExpression(params) {
     const encounterVal = Number(params.encounter);
     if (!isNaN(encounterVal)) {
       if (encounterVal === 0) {
-        parts.push('encounter = 0');
+        parts.push('encounterID = 0');
       } else if (encounterVal === -2) {
-        parts.push('encounter != 0');
+        parts.push('encounterID != 0');
       } else if (encounterVal > 0) {
-        parts.push('encounter = ' + encounterVal);
+        parts.push('encounterID = ' + encounterVal);
       }
     }
   }
@@ -239,12 +239,7 @@ export function buildFilterExpression(params) {
     }
   }
 
-  if (params.options) {
-    const optionsVal = Number(params.options);
-    if (!isNaN(optionsVal) && (optionsVal & 4096) === 4096) {
-      parts.push('ability.avoidable = true');
-    }
-  }
+
 
   return parts.length > 0 ? parts.join(' and ') : undefined;
 }
@@ -376,17 +371,25 @@ export class V2Client {
    * Port of wclV2FetchTable_ (WCL_Compat.gs L339-368).
    */
   async fetchTable(reportCode, dataType, params = {}) {
-    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String) {
+    const query = `query ($code: String!, $startTime: Float!, $endTime: Float!, $dataType: TableDataType, $abilityID: Float, $sourceID: Int, $targetID: Int, $encounterID: Int, $hostilityType: HostilityType, $filterExpression: String, $viewBy: ViewType, $viewOptions: Int) {
       rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }
       reportData {
         report(code: $code) {
-          table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression)
+          table(startTime: $startTime, endTime: $endTime, dataType: $dataType, abilityID: $abilityID, sourceID: $sourceID, targetID: $targetID, encounterID: $encounterID, hostilityType: $hostilityType, filterExpression: $filterExpression, viewBy: $viewBy, viewOptions: $viewOptions)
         }
       }
     }`;
 
     // Build filter expression from V1-style params
     const filterExpression = params.filterExpression || buildFilterExpression(params);
+
+    let viewByVal = undefined;
+    if (params.by) {
+      const byVal = params.by.toLowerCase();
+      if (byVal === 'target') viewByVal = 'Target';
+      else if (byVal === 'source') viewByVal = 'Source';
+      else if (byVal === 'ability') viewByVal = 'Ability';
+    }
 
     const variables = {
       code: reportCode,
@@ -399,6 +402,8 @@ export class V2Client {
       encounterID: (params.encounter !== undefined && Number(params.encounter) > 0) ? Number(params.encounter) : undefined,
       hostilityType: params.hostility !== undefined ? (params.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
       filterExpression: filterExpression || undefined,
+      viewBy: viewByVal,
+      viewOptions: params.options !== undefined ? Number(params.options) : undefined,
     };
 
     // Clean undefined values
