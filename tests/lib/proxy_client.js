@@ -176,6 +176,8 @@ export class ProxyClient {
             enemyNPCs { id gameID }
             friendlyPets { id gameID }
             gameZone { id name }
+            difficulty
+            size
           }
           masterData {
             actors { id gameID name type subType petOwner }

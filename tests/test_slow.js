@@ -15,6 +15,7 @@ import { fileURLToPath } from 'url';
 
 import { V1Client } from './lib/v1_client.js';
 import { V2Client } from './lib/v2_client.js';
+import { ProxyClient } from './lib/proxy_client.js';
 import { deepCompare, summarizeDiffs, formatResultMarkdown } from './lib/compare.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,8 @@ const CONFIG = {
   v2ClientId: process.env.WCL_V2_CLIENT_ID,
   v2ClientSecret: process.env.WCL_V2_CLIENT_SECRET,
   reportCode: process.env.TEST_REPORT_CODE || 'TmNwkjXayJKtcR4W',
+  proxyUrl: process.env.WCL_PROXY_URL || 'http://localhost:8787/wcl',
+  proxySecret: process.env.WCL_PROXY_SECRET,
 };
 
 const SLEEP_MS = 8000; // 8 seconds delay between requests to be safe
@@ -201,7 +204,11 @@ function generateReport(results, elapsed, isComplete = false) {
 
 async function main() {
   const startTime = Date.now();
-  const filter = process.argv[2];
+  const args = process.argv.slice(2);
+  const useProxy = args.includes('--proxy') || process.env.USE_PROXY === 'true';
+  const filterArgs = args.filter(arg => arg !== '--proxy');
+  const filter = filterArgs[0];
+
   const activeTests = filter 
     ? tests.filter(t => t.name.toLowerCase().includes(filter.toLowerCase()))
     : tests;
@@ -216,7 +223,20 @@ async function main() {
   log(`Spacing delay: ${SLEEP_MS}ms`);
 
   const v1Client = new V1Client(CONFIG.v1ApiKey);
-  const v2Client = new V2Client(CONFIG.v2ClientId, CONFIG.v2ClientSecret);
+  let v2Client;
+
+  if (useProxy) {
+    log(`Initializing ProxyClient pointing to: ${CONFIG.proxyUrl}`);
+    v2Client = new ProxyClient(
+      CONFIG.proxyUrl,
+      CONFIG.proxySecret,
+      CONFIG.v2ClientId,
+      CONFIG.v2ClientSecret
+    );
+  } else {
+    log(`Initializing direct V2Client`);
+    v2Client = new V2Client(CONFIG.v2ClientId, CONFIG.v2ClientSecret);
+  }
 
   // Test V2 Auth first
   try {
