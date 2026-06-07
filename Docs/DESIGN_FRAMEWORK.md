@@ -46,8 +46,8 @@ Instead, all development must occur in the **decoupled design source files**, wh
 
 | Source Component | Path | Description |
 |---|---|---|
-| **WCL Compatibility Facade** | [V2 Wrapper/shared/WCL_Compat.gs](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/V2%20Wrapper/shared/WCL_Compat.gs) | The translation layer between Warcraft Logs V1 REST calls and WCL V2 GraphQL. Caches properties and tokens, manages rate limit warnings, and paces client-side requests. |
-| **Discord Webhook Relay** | [n8n Automations/Shared_DiscordWebhook.gs](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/n8n%20Automations/Shared_DiscordWebhook.gs) | Version-neutral helper function `fetchDiscordWebhook_` that handles payloads and routes them through the Discord proxy if configured. |
+| **WCL Compatibility Facade** | [V2 Wrapper/shared/WCL_Compat.gs](../V2%20Wrapper/shared/WCL_Compat.gs) | The translation layer between Warcraft Logs V1 REST calls and WCL V2 GraphQL. Caches properties and tokens, manages rate limit warnings, and paces client-side requests. |
+| **Discord Webhook Relay** | [n8n Automations/Shared_DiscordWebhook.gs](../n8n%20Automations/Shared_DiscordWebhook.gs) | Version-neutral helper function `fetchDiscordWebhook_` that handles payloads and routes them through the Discord proxy if configured. |
 | **Version-Specific Replacements** | `V2 Wrapper/replacements/<Era>/<Tool>/<Version>/` | Modded copies of upstream sheets files (e.g. `Consumables.gs`, `Filtering.gs`) containing direct call routes to the WCL facade. |
 
 ---
@@ -61,7 +61,7 @@ node build_combined.js
 ```
 
 ### What the Build Runner Does:
-1. **Cleans Output:** Deletes the existing [RCE Replacements/](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/RCE%20Replacements) folder to ensure no stale files remain.
+1. **Cleans Output:** Deletes the existing [RCE Replacements/](../RCE%20Replacements) folder to ensure no stale files remain.
 2. **Applies Discord Patches:**
    - For **RPB** sheets, it automatically replaces direct `UrlFetchApp.fetch` webhook calls in `Filtering.gs` with a routing call to `fetchDiscordWebhook_`.
    - For **CLA** sheets, it automatically strips local duplicate versions of Discord helper functions from `General.gs` to prevent global function naming collisions.
@@ -76,19 +76,19 @@ The Cloudflare Worker proxy code is maintained in two locations:
 
 | Location | Purpose |
 |---|---|
-| [Combined Proxy/](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/) | **Source of truth** in this monorepo. Contains `worker.js`, `wrangler.toml`, and `.dev.vars` for local testing. |
+| [Combined Proxy/](../Combined%20Proxy/) | **Source of truth** in this monorepo. Contains `worker.js`, `wrangler.toml`, and `.dev.vars` for local testing. |
 | [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) | **Standalone deploy repo** (subrepo). Mirrors `Combined Proxy/` contents for 1-click Cloudflare deployment. Users deploy from here. |
 
 ### Deployment Rules:
 - **No Duplicate Worker Folders:** Do not replicate worker files or folders into `RCE Replacements/` or sub-system directories.
 - **Pacing is Client-Side Only:** No request queuing, sleeping, or delay loops should ever be added back to the Cloudflare Worker code. Sleeping inside Workers holds connections open and exceeds CPU time/duration limits on the free tier. All pacing must remain client-side in `WCL_Compat.gs`.
-- **Sync Updates:** After modifying `Combined Proxy/`, sync changes to `RCE-Proxy` using the commands in [Combined Proxy/SYNC_GUIDE.md](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/SYNC_GUIDE.md). Pushing to `RCE-Proxy` triggers automatic redeployment for all users who forked it.
+- **Sync Updates:** After modifying `Combined Proxy/`, sync changes to `RCE-Proxy` using the commands in [Combined Proxy/SYNC_GUIDE.md](../Combined%20Proxy/SYNC_GUIDE.md). Pushing to `RCE-Proxy` triggers automatic redeployment for all users who forked it.
 
 ---
 
 ## 5. Testing & Verification
 
-The `tests/` directory contains tools for verifying that the V2 GraphQL compatibility layer produces identical results to the legacy V1 REST API. See the full guide at [Docs/TESTING_GUIDE.md](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Docs/TESTING_GUIDE.md).
+The `tests/` directory contains tools for verifying that the V2 GraphQL compatibility layer produces identical results to the legacy V1 REST API. See the full guide at [TESTING_GUIDE.md](TESTING_GUIDE.md).
 
 | Tool | Purpose |
 |---|---|

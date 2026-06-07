@@ -127,7 +127,7 @@ function fetchWarcraftLogsViaProxy_(url, options) {
 ## Combined Integration (Recommended)
 
 If you are using the V2 Compatibility Wrapper:
-1. Copy [WCL_Compat.gs](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/V2%20Wrapper/shared/WCL_Compat.gs) (or the generated `wrapper.gs` from `RCE Replacements/`) into your Apps Script project.
+1. Copy [WCL_Compat.gs](../V2%20Wrapper/shared/WCL_Compat.gs) (or the generated `wrapper.gs` from `RCE Replacements/`) into your Apps Script project.
 2. Configure your `WCL_PROXY_WORKER_URL` and `WCL_PROXY_SECRET` Script Properties.
 3. The wrapper has proxy envelope wrapping built-in and will automatically route both V1 and V2 queries through the Worker when these properties are present.
 

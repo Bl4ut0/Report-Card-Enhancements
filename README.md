@@ -102,14 +102,14 @@ Do not commit real Web App URLs, Discord webhooks, WarcraftLogs API keys, OAuth 
 
 ### Unfinished & Active Work
 1. **WCL Proxy Durable Object Queuing**:
-   - The Warcraft Logs Proxy ([WCL Proxy/worker.js](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/WCL%20Proxy/worker.js)) implements basic retries, routing validation, and caching, but lacks request pacing and serialization.
+   - The Warcraft Logs Proxy ([WCL Proxy/worker.js](WCL%20Proxy/worker.js)) implements basic retries, routing validation, and caching, but lacks request pacing and serialization.
    - Pacing is needed to queue and serialize requests per credential, report, or expansion lane under heavy load. A Cloudflare Durable Objects system is planned but not implemented.
 2. **End-to-End n8n Pipeline Validation**:
    - The Apps Script automation patches (`CLA_Patch_n8n.gs`, `RPB_Patch_n8n.gs`) are scaffolded but the full pipeline sequence (intake → queue → locks → CLA → RPB) has not yet been verified end-to-end under production conditions.
 
 ### Development Roadmap
 - [x] **Phase 1: Complete V2 GraphQL Adapters**: Implement event and table GraphQL query fetches and write adaptation functions to match the shapes expected by the sheet logic.
-- [x] **Phase 2: Combined Proxy Testing**: Validate and test the consolidated [Combined Proxy/worker.js](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/worker.js) under simulated rate-limiting scenarios.
+- [x] **Phase 2: Combined Proxy Testing**: Validate and test the consolidated [Combined Proxy/worker.js](Combined%20Proxy/worker.js) under simulated rate-limiting scenarios.
 - [x] **Phase 3: TBC v1.6.0a End-to-End Proof of Concept**: Apply the replacement sets for TBC CLA and RPB v1.6.0a and verify full compatibility with live WCL V1/V2 endpoints.
 - [ ] **Phase 4: WCL Proxy Pacing (Durable Objects)**: Integrate request pacing/queueing inside the Cloudflare Worker to avoid rate limit spikes.
 - [ ] **Phase 5: Expand Era Coverage**: Port replacement sets to other game eras (Vanilla, Season of Discovery, WotLK, MoP).

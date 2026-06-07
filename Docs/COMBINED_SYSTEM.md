@@ -43,7 +43,7 @@ graph TD
 
 ## 2. Combined Discord Proxy
 
-The **Combined Proxy Worker** ([Combined Proxy/worker.js](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/worker.js)) routes traffic dynamically based on paths and headers:
+The **Combined Proxy Worker** ([Combined Proxy/worker.js](../Combined%20Proxy/worker.js)) routes traffic dynamically based on paths and headers:
 
 - **Discord Webhook Relay** (`/discord` path or `x-discord-webhook` header): Relays payloads safely to Discord, bypassing Google Apps Script shared IP rate limit blocks.
 - **Warcraft Logs API Proxy** (`/wcl` path or `x-wcl-proxy-secret` header): Handles request retries, pacing, dynamic GraphQL caching, and stale-on-error fallbacks.
@@ -74,7 +74,7 @@ npx wrangler secret put DISCORD_PROXY_SECRET
 ```
 
 #### Environment Variables (`wrangler.toml`)
-Configure these in [Combined Proxy/wrangler.toml](file:///c:/Dev%20Projects/Report%20Card%20Enhancements/Combined%20Proxy/wrangler.toml):
+Configure these in [Combined Proxy/wrangler.toml](../Combined%20Proxy/wrangler.toml):
 - `WCL_PROXY_MAX_RETRIES`: Number of retries on 429/5xx (default: `2`).
 - `WCL_PROXY_MAX_BACKOFF_MS`: Bounded backoff delay cap (default: `10000` ms).
 - `WCL_PROXY_CACHE_TTL_SECONDS`: Short-term fresh cache duration. Set to > 0 (e.g., `300` for 5 minutes) to enable caching.
