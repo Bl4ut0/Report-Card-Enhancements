@@ -12,7 +12,7 @@ The proxy is intended to help with:
 - Transient `502`, `503`, and `504` responses.
 - Shared retry and `Retry-After` handling.
 - Optional short-lived caching for safe repeated V1 `GET` requests.
-- A future queue/Durable Object design for serializing requests per expansion, report, or credential.
+- Client-side request pacing for serializing requests.
 
 It is not intended to evade Warcraft Logs limits. The correct long-term behavior is to pace requests, reduce duplicate fetches, respect `Retry-After`, and keep one global Warcraft Logs API lock in automation.
 
@@ -134,6 +134,6 @@ If you are using the V2 Compatibility Wrapper:
 
 ## Current State
 
-This is a framework scaffold. It includes target validation, shared-secret validation, bounded retries, `Retry-After` support, and optional GET caching. It does not yet implement a Durable Object queue.
+This is a legacy standalone framework scaffold. The active production implementation is consolidated in the Combined Proxy, which integrates target validation, shared-secret validation, bounded retries, `Retry-After` support, and SHA-256 caching with client-side pacing.
 
 

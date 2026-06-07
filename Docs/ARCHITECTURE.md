@@ -209,7 +209,7 @@ CLA/RPB source or V2 Wrapper
      -> SHA-256 query caching with stale-on-error fallback
 ```
 
-Request serialization and pacing are implemented client-side directly in `WCL_Compat.gs` using script property configurations (e.g. `WCL_MIN_FETCH_INTERVAL_MS`). Worker-side queuing via Durable Objects is deprecated to avoid exceeding CPU time limits and holding connections open.
+Request serialization and pacing are implemented client-side directly in `WCL_Compat.gs` using script property configurations (e.g. `WCL_MIN_FETCH_INTERVAL_MS`) to avoid exceeding CPU time limits and holding connections open.
 
 ## Constraints
 

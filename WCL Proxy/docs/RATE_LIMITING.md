@@ -24,17 +24,14 @@ Use all of these together:
 |---|---|
 | n8n expansion queue | Prevents multiple reports from mutating the same expansion lane at once. |
 | n8n Warcraft Logs API lock | Prevents CLA/RPB and monitor jobs from burning the same credential concurrently. |
-| WCL Proxy Worker | Handles bounded retries, `Retry-After`, optional safe caching, and future request queueing. |
-| V2 Wrapper | Routes source-level WCL calls through compatibility helpers instead of direct URLs. |
+| WCL Proxy Worker | Handles bounded retries, `Retry-After`, and SHA-256 caching with fallback-on-error. |
+| V2 Wrapper | Routes source-level WCL calls through compatibility helpers with client-side request pacing. |
 
-## Future Queue Design
+## Client-Side Pacing Design
 
-If retries and caching are not enough, add a Durable Object queue keyed by one of:
+Request pacing and serialization is enforced client-side inside `WCL_Compat.gs` (e.g. via `Utilities.sleep` using the configurable `WCL_MIN_FETCH_INTERVAL_MS`). 
 
-- `credentialHash`
-- `expansion`
-- `reportCode`
-- `expansion + reportCode`
-
-That queue should serialize requests, enforce a minimum delay between upstream fetches, and surface clear `429`/backoff state to Apps Script or n8n.
+Worker-side queuing or Durable Objects are not used because:
+1. **Free Tier Compatibility**: Durable Objects require a paid Cloudflare subscription, whereas this project is designed to run entirely within the free tier.
+2. **Resource Efficiency**: Sleeping inside Worker threads holds HTTP connections open, wasting active CPU time and exceeding free-tier isolate execution limits. Apps Script is well-suited to handle sequential client-side delays during execution.
 
