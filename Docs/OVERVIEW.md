@@ -46,6 +46,14 @@ Report Card Enhancements/
       CHANGELOG.md
       RATE_LIMITING.md
 
+  VPS Proxy/               ← Containerized self-hostable proxy (Discord + WCL) for VPS hosting
+    README.md
+    server.js
+    package.json
+    Dockerfile
+    Caddyfile
+    docker-compose.yml
+
   n8n Automations/
     README.md
     CLA_Patch_n8n.gs
@@ -116,6 +124,7 @@ Original Code/
 | `Current Source/` snapshots | Local only | Ignored source snapshots used for private/local review. |
 | `Original Code/` snapshots | Local only | Ignored upstream/reference snapshots. |
 | `Combined Proxy/` | Yes | Consolidated Cloudflare Worker proxy and source-level proxy files. Mirrored to standalone subrepo. |
+| `VPS Proxy/` | Yes | Containerized self-hostable Node.js + Caddy proxy service for VPS deployment. |
 | `Discord Proxy/` (legacy) | Yes | Legacy Worker relay and documentation. |
 | `WCL Proxy/` (legacy) | Yes | Legacy WCL API proxy scaffold and documentation. |
 | `n8n Automations/` | Yes | Apps Script patch files for automation and orchestration. |

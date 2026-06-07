@@ -35,6 +35,9 @@ Committed layers:
 Combined Proxy/
   Consolidated Cloudflare Worker proxy (Discord webhook relay + WCL proxy with SHA-256 caching and fallback). Source of truth; mirrored to standalone deploy subrepo.
 
+VPS Proxy/
+  Containerized, self-hostable proxy (Discord webhook relay + WCL proxy with local in-memory caching and fallback). Configured for easy VPS hosting via Docker Compose and Caddy.
+
 Discord Proxy/
   Legacy standalone Discord webhook relay documentation and worker scaffold.
 
