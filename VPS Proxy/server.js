@@ -82,6 +82,8 @@ app.post('/discord', async (req, res) => {
  * Warcraft Logs API Proxy Endpoint
  */
 app.post('/wcl', async (req, res) => {
+  res.set('x-wcl-proxy-relayed', 'true');
+  
   const receivedSecret = req.headers['x-wcl-proxy-secret'] || '';
   if (WCL_PROXY_SECRET && receivedSecret !== WCL_PROXY_SECRET) {
     return res.status(401).send('Unauthorized');

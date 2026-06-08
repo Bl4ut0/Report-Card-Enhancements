@@ -192,7 +192,34 @@ function wclFetchInternal_(url, options, errorPrefix) {
   var content = response.getContentText();
 
   if (responseCode < 200 || responseCode >= 300) {
-    throw new Error(errorPrefix + ' Fetch failed with status ' + responseCode + ': ' + content);
+    var headers = response.getHeaders() || {};
+    var isProxied = workerUrl ? true : false;
+    
+    // Check for relayed header case-insensitively
+    var isRelayed = false;
+    for (var k in headers) {
+      if (headers.hasOwnProperty(k) && k.toLowerCase() === 'x-wcl-proxy-relayed') {
+        if (headers[k] === 'true' || headers[k] === true) {
+          isRelayed = true;
+        }
+        break;
+      }
+    }
+    
+    var diagnosticMessage = "";
+    if (responseCode === 429) {
+      if (isProxied) {
+        if (isRelayed) {
+          diagnosticMessage = " [Origin: Warcraft Logs API (relayed via Proxy Worker)]";
+        } else {
+          diagnosticMessage = " [Origin: Cloudflare Edge (Worker Endpoint blocked/rate-limited)]";
+        }
+      } else {
+        diagnosticMessage = " [Origin: Warcraft Logs API (Direct Request from Google Apps Script IP)]";
+      }
+    }
+    
+    throw new Error(errorPrefix + ' Fetch failed with status ' + responseCode + diagnosticMessage + ': ' + content);
   }
 
   try {

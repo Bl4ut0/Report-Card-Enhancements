@@ -240,6 +240,7 @@ async function handleWclProxy(request, env) {
         headers: {
           'x-wcl-proxy-attempts': attempts.toString(),
           'x-wcl-proxy-cache': 'miss',
+          'x-wcl-proxy-relayed': 'true',
         }
       });
     }
@@ -355,6 +356,7 @@ function withProxyHeaders(response, attempts, cacheStatus) {
   const headers = new Headers(response.headers);
   headers.set('x-wcl-proxy-attempts', attempts.toString());
   headers.set('x-wcl-proxy-cache', cacheStatus);
+  headers.set('x-wcl-proxy-relayed', 'true');
 
   return new Response(response.clone().body, {
     status: response.status,
