@@ -4,14 +4,14 @@
  * Warcraft Logs Compatibility Facade & Discord Webhook Relay Wrapper
  *
  * This combined file allows Google Sheets to fetch Warcraft Logs data (V1 and V2)
- * and send Discord Webhook messages optionally through Cloudflare Worker proxies.
+ * and send Discord Webhook messages optionally through compatible proxy endpoints.
  *
  * CONFIGURATION:
- *   You can configure your Cloudflare Worker details EITHER by entering them in
+ *   You can configure proxy details EITHER by entering them in
  *   the global variables below, OR by adding them to Settings -> Script Properties:
- *     - WCL_PROXY_WORKER_URL    : URL to your Cloudflare Warcraft Logs proxy worker
+ *     - WCL_PROXY_URL           : URL to any compatible Warcraft Logs proxy endpoint
  *     - WCL_PROXY_SECRET        : Secret password for the WCL proxy
- *     - DISCORD_PROXY_WORKER_URL: URL to your Cloudflare Discord webhook proxy worker
+ *     - DISCORD_PROXY_URL       : URL to any compatible Discord proxy endpoint
  *     - DISCORD_PROXY_SECRET    : Secret password for the Discord proxy
  *
  *   If these values are left empty/null, the sheet automatically falls back to direct,
@@ -24,10 +24,10 @@
  */
 
 // ── Optional Hardcoded Worker Configurations ─────────────────────────────────
-// Fill these in to hardcode worker options. If left null, Script Properties will be checked.
-var WCL_PROXY_WORKER_URL_CONFIG     = null; // e.g. 'https://your-worker.workers.dev/wcl'
+// Fill these in to hardcode proxy options. If left null, Script Properties will be checked.
+var WCL_PROXY_URL_CONFIG            = null; // e.g. 'https://proxy.example.com/wcl'
 var WCL_PROXY_SECRET_CONFIG         = null; // e.g. 'your-wcl-proxy-secret'
-var DISCORD_PROXY_WORKER_URL_CONFIG = null; // e.g. 'https://your-worker.workers.dev/discord'
+var DISCORD_PROXY_URL_CONFIG        = null; // e.g. 'https://proxy.example.com/discord'
 var DISCORD_PROXY_SECRET_CONFIG     = null; // e.g. 'your-discord-proxy-secret'
 
 /**
@@ -77,6 +77,60 @@ function wclSetProperty_(key, value) {
   } catch (e) {
     Logger.log('[WCL Wrapper] Failed to set script property ' + key + ': ' + e.message);
   }
+}
+
+function wclDeleteProperty_(key) {
+  if (wclCachedProperties_ !== null) {
+    delete wclCachedProperties_[key];
+  }
+  try {
+    PropertiesService.getScriptProperties().deleteProperty(key);
+  } catch (e) {
+    Logger.log('[WCL Wrapper] Failed to delete script property ' + key + ': ' + e.message);
+  }
+}
+
+function wclGetHeader_(headers, name) {
+  var targetName = name.toLowerCase();
+  for (var key in headers) {
+    if (headers.hasOwnProperty(key) && key.toLowerCase() === targetName) {
+      return headers[key];
+    }
+  }
+  return null;
+}
+
+function wclGetRetryAfterMs_(retryAfterValue) {
+  if (retryAfterValue === null || retryAfterValue === undefined || retryAfterValue === '') {
+    return 0;
+  }
+
+  var seconds = Number(retryAfterValue);
+  if (!isNaN(seconds)) {
+    return Math.max(0, seconds * 1000);
+  }
+
+  var retryAt = Date.parse(String(retryAfterValue));
+  return isNaN(retryAt) ? 0 : Math.max(0, retryAt - Date.now());
+}
+
+function wclCheckV2Cooldown_() {
+  var cooldownUntil = Number(wclGetProperty_('WCL_V2_COOLDOWN_UNTIL_MS') || 0);
+  if (cooldownUntil <= 0) {
+    return;
+  }
+
+  var remainingMs = cooldownUntil - Date.now();
+  if (remainingMs <= 0) {
+    wclDeleteProperty_('WCL_V2_COOLDOWN_UNTIL_MS');
+    return;
+  }
+
+  throw new Error(
+    '[WCL V2 Wrapper] Warcraft Logs cooldown is active. Retry in approximately ' +
+    Math.ceil(remainingMs / 1000) +
+    ' seconds.'
+  );
 }
 
 /**
@@ -133,6 +187,20 @@ function wclFetchTable_(rawCredentials, reportCode, dataType, options) {
   return wclV1FetchTable_(auth, reportCode, dataType, options || {});
 }
 
+function wclFetchTables_(rawCredentials, reportCode, requests) {
+  var auth = wclGetCredentialMode_(rawCredentials);
+  var tableRequests = requests || [];
+  if (auth.mode == 'v2')
+    return wclV2FetchTables_(auth, reportCode, tableRequests);
+
+  var results = [];
+  for (var i = 0; i < tableRequests.length; i++) {
+    var request = tableRequests[i] || {};
+    results.push(wclV1FetchTable_(auth, reportCode, request.dataType, request.options || {}));
+  }
+  return results;
+}
+
 function wclFetchEvents_(rawCredentials, reportCode, dataType, options) {
   var auth = wclGetCredentialMode_(rawCredentials);
   if (auth.mode == 'v2')
@@ -147,7 +215,7 @@ function wclUnsupported_(message) {
 
 /**
  * Internal shared fetch dispatcher.
- * Routes through the WCL Proxy if WCL_PROXY_WORKER_URL is configured.
+ * Routes through the configured WCL proxy endpoint when present.
  * Otherwise, falls back to direct UrlFetchApp fetch.
  */
 function wclFetchInternal_(url, options, errorPrefix) {
@@ -165,14 +233,19 @@ function wclFetchInternal_(url, options, errorPrefix) {
     }
   }
 
-  var workerUrl = (typeof WCL_PROXY_WORKER_URL_CONFIG !== 'undefined' && WCL_PROXY_WORKER_URL_CONFIG) || wclGetProperty_('WCL_PROXY_WORKER_URL');
+  var proxyUrl =
+    (typeof WCL_PROXY_URL_CONFIG !== 'undefined' && WCL_PROXY_URL_CONFIG) ||
+    wclGetProperty_('WCL_PROXY_URL');
   var proxySecret = (typeof WCL_PROXY_SECRET_CONFIG !== 'undefined' && WCL_PROXY_SECRET_CONFIG) || wclGetProperty_('WCL_PROXY_SECRET');
 
   // Determine if this is V2 (GraphQL) or V1 (REST)
   var isV2 = (errorPrefix && errorPrefix.indexOf('V2') > -1) || url.indexOf('/api/v2/') > -1 || url.indexOf('/oauth/') > -1;
+  if (isV2) {
+    wclCheckV2Cooldown_();
+  }
 
-  // Automatic rate-limit pacing to prevent request overflows (150ms for V2 GraphQL, 1000ms for V1 REST)
-  var minInterval = isV2 ? 150 : 1000;
+  // Automatic rate-limit pacing to prevent request overflows (1000ms for V2 GraphQL, 1000ms for V1 REST)
+  var minInterval = isV2 ? 1000 : 1000;
   var intervalProp = wclGetProperty_('WCL_MIN_FETCH_INTERVAL_MS');
   if (intervalProp) {
     var parsedInterval = parseInt(intervalProp, 10);
@@ -193,7 +266,7 @@ function wclFetchInternal_(url, options, errorPrefix) {
   }
 
   var response;
-  if (workerUrl) {
+  if (proxyUrl) {
     var envelope = {
       url: url,
       method: options.method || 'GET'
@@ -214,7 +287,7 @@ function wclFetchInternal_(url, options, errorPrefix) {
       payload: JSON.stringify(envelope),
       muteHttpExceptions: true
     };
-    response = UrlFetchApp.fetch(workerUrl, fetchOptions);
+    response = UrlFetchApp.fetch(proxyUrl, fetchOptions);
   } else {
     // Direct fetch
     response = UrlFetchApp.fetch(url, options);
@@ -225,29 +298,46 @@ function wclFetchInternal_(url, options, errorPrefix) {
 
   if (responseCode < 200 || responseCode >= 300) {
     var headers = response.getHeaders() || {};
-    var isProxied = workerUrl ? true : false;
+    var isProxied = proxyUrl ? true : false;
     
     // Check for relayed header case-insensitively
     var isRelayed = false;
+    var proxyRuntime = "";
     for (var k in headers) {
-      if (headers.hasOwnProperty(k) && k.toLowerCase() === 'x-wcl-proxy-relayed') {
-        if (headers[k] === 'true' || headers[k] === true) {
-          isRelayed = true;
+      if (headers.hasOwnProperty(k)) {
+        var lowerHeaderName = k.toLowerCase();
+        if (lowerHeaderName === 'x-wcl-proxy-relayed') {
+          if (headers[k] === 'true' || headers[k] === true) {
+            isRelayed = true;
+          }
+        } else if (lowerHeaderName === 'x-wcl-proxy-runtime') {
+          proxyRuntime = String(headers[k] || '').toLowerCase();
         }
-        break;
       }
     }
     
     var diagnosticMessage = "";
     if (responseCode === 429) {
+      var retryAfterMs = wclGetRetryAfterMs_(wclGetHeader_(headers, 'retry-after'));
+      if (isV2 && retryAfterMs > 0) {
+        wclSetProperty_('WCL_V2_COOLDOWN_UNTIL_MS', String(Date.now() + retryAfterMs));
+        diagnosticMessage += " [Retry after: " + Math.ceil(retryAfterMs / 1000) + " seconds]";
+      }
+
       if (isProxied) {
         if (isRelayed) {
-          diagnosticMessage = " [Origin: Warcraft Logs API (relayed via Proxy Worker)]";
+          if (proxyRuntime === 'vps') {
+            diagnosticMessage += " [Origin: Warcraft Logs API (relayed via VPS Proxy)]";
+          } else if (proxyRuntime === 'cloudflare-worker') {
+            diagnosticMessage += " [Origin: Warcraft Logs API (relayed via Cloudflare Worker)]";
+          } else {
+            diagnosticMessage += " [Origin: Warcraft Logs API (relayed via configured proxy)]";
+          }
         } else {
-          diagnosticMessage = " [Origin: Cloudflare Edge (Worker Endpoint blocked/rate-limited)]";
+          diagnosticMessage += " [Origin: Cloudflare Edge (Worker Endpoint blocked/rate-limited)]";
         }
       } else {
-        diagnosticMessage = " [Origin: Warcraft Logs API (Direct Request from Google Apps Script IP)]";
+        diagnosticMessage += " [Origin: Warcraft Logs API (Direct Request from Google Apps Script IP)]";
       }
     }
     
@@ -491,6 +581,94 @@ function wclV2FetchTable_(auth, reportCode, dataType, options) {
   }
   
   return rawResponse.data.reportData.report.table.data || rawResponse.data.reportData.report.table;
+}
+
+function wclV2FetchTables_(auth, reportCode, requests) {
+  if (!requests || requests.length === 0) {
+    return [];
+  }
+
+  var configuredBatchSize = parseInt(wclGetProperty_('WCL_V2_TABLE_BATCH_SIZE') || '12', 10);
+  var batchSize = (!isNaN(configuredBatchSize) && configuredBatchSize > 0) ? configuredBatchSize : 12;
+  var results = [];
+
+  for (var offset = 0; offset < requests.length; offset += batchSize) {
+    var batch = requests.slice(offset, offset + batchSize);
+    var variableDefinitions = ['$code: String!'];
+    var tableFields = [];
+    var variables = { code: reportCode };
+
+    for (var i = 0; i < batch.length; i++) {
+      var suffix = i.toString();
+      var request = batch[i] || {};
+      var options = request.options || {};
+
+      variableDefinitions.push(
+        '$startTime' + suffix + ': Float!',
+        '$endTime' + suffix + ': Float!',
+        '$dataType' + suffix + ': TableDataType',
+        '$abilityID' + suffix + ': Float',
+        '$sourceID' + suffix + ': Int',
+        '$targetID' + suffix + ': Int',
+        '$encounterID' + suffix + ': Int',
+        '$hostilityType' + suffix + ': HostilityType',
+        '$filterExpression' + suffix + ': String',
+        '$viewBy' + suffix + ': ViewType',
+        '$viewOptions' + suffix + ': Int',
+        '$killType' + suffix + ': KillType'
+      );
+
+      tableFields.push(
+        'table' + suffix + ': table(' +
+        'startTime: $startTime' + suffix + ', ' +
+        'endTime: $endTime' + suffix + ', ' +
+        'dataType: $dataType' + suffix + ', ' +
+        'abilityID: $abilityID' + suffix + ', ' +
+        'sourceID: $sourceID' + suffix + ', ' +
+        'targetID: $targetID' + suffix + ', ' +
+        'encounterID: $encounterID' + suffix + ', ' +
+        'hostilityType: $hostilityType' + suffix + ', ' +
+        'filterExpression: $filterExpression' + suffix + ', ' +
+        'viewBy: $viewBy' + suffix + ', ' +
+        'viewOptions: $viewOptions' + suffix + ', ' +
+        'killType: $killType' + suffix +
+        ')'
+      );
+
+      variables['startTime' + suffix] = options.start !== undefined ? Number(options.start) : 0;
+      variables['endTime' + suffix] = options.end !== undefined ? Number(options.end) : 999999999999;
+      variables['dataType' + suffix] = wclV2GetTableDataType_(request.dataType);
+      if (options.abilityid !== undefined) variables['abilityID' + suffix] = Number(options.abilityid);
+      if (options.sourceid !== undefined) variables['sourceID' + suffix] = Number(options.sourceid);
+      if (options.targetid !== undefined) variables['targetID' + suffix] = Number(options.targetid);
+      if (options.encounter !== undefined && Number(options.encounter) > 0) variables['encounterID' + suffix] = Number(options.encounter);
+      if (options.hostility !== undefined) variables['hostilityType' + suffix] = options.hostility == 1 ? 'Enemies' : 'Friendlies';
+      if (options.filterExpression !== undefined) variables['filterExpression' + suffix] = options.filterExpression;
+      if (options.viewBy !== undefined) variables['viewBy' + suffix] = options.viewBy;
+      if (options.viewOptions !== undefined) variables['viewOptions' + suffix] = Number(options.viewOptions);
+      if (options.killType !== undefined) variables['killType' + suffix] = options.killType;
+    }
+
+    var query = 'query (' + variableDefinitions.join(', ') + ') {' +
+      ' rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }' +
+      ' reportData {' +
+      '  report(code: $code) {' + tableFields.join(' ') + '}' +
+      ' }' +
+      '}';
+
+    var rawResponse = wclV2GraphQLQuery_(auth, query, variables);
+    wclLogRateLimit_(rawResponse);
+    var report = rawResponse && rawResponse.data && rawResponse.data.reportData
+      ? rawResponse.data.reportData.report
+      : null;
+
+    for (var resultIndex = 0; resultIndex < batch.length; resultIndex++) {
+      var table = report ? report['table' + resultIndex] : null;
+      results.push(table ? (table.data || table) : { entries: [] });
+    }
+  }
+
+  return results;
 }
 
 function wclV2FetchEvents_(auth, reportCode, dataType, options) {
@@ -877,17 +1055,17 @@ function wclTranslateV1UrlToV2GraphQL_(url, auth) {
  * Purpose:
  *   Adds patch-only export wrappers that temporarily clear the sheet-level
  *   Discord webhook, run the locked CLA/RPB export function, restore the webhook,
- *   then send a completion notice through a Cloudflare Worker using headers.
+ *   then send a completion notice through a compatible proxy using headers.
  *
- *   This avoids putting a Worker URL in the sheet webhook field, avoids editing
+ *   This avoids putting a proxy URL in the sheet webhook field, avoids editing
  *   locked source files, and keeps Discord notification failures from blocking
  *   report export completion.
  *
  * Setup:
  *   1. Upload this file to the CLA/RPB Apps Script project.
  *   2. Set Script Properties:
- *      DISCORD_PROXY_WORKER_URL = https://your-worker.workers.dev
- *      DISCORD_PROXY_SECRET     = your Worker secret
+ *      DISCORD_PROXY_URL    = https://proxy.example.com/discord
+ *      DISCORD_PROXY_SECRET = your proxy secret
  *   3. Leave the sheet Instructions Discord webhook field as the normal raw
  *      Discord URL:
  *      https://discord.com/api/webhooks/ID/TOKEN
@@ -1047,8 +1225,8 @@ function fetchDiscordWebhook_(webHook, params) {
 }
 
 /**
- * Sends a single Discord webhook. If DISCORD_PROXY_WORKER_URL is configured,
- * the POST goes to the Worker root and the real Discord URL is sent in a
+ * Sends a single Discord webhook. If a Discord proxy URL is configured,
+ * the POST goes to the proxy endpoint and the real Discord URL is sent in a
  * header. Otherwise it falls back to direct Discord delivery.
  *
  * This function intentionally does not throw on notification failure. Discord
@@ -1060,13 +1238,16 @@ function fetchDiscordWebhook_(webHook, params) {
  */
 function fetchSingleDiscordWebhook_(webHookUrl, params) {
   var props = PropertiesService.getScriptProperties();
-  var workerUrl = (typeof DISCORD_PROXY_WORKER_URL_CONFIG !== 'undefined' && DISCORD_PROXY_WORKER_URL_CONFIG) || (props.getProperty('DISCORD_PROXY_WORKER_URL') || '');
-  workerUrl = workerUrl.replace(/\/$/, '');
+  var proxyUrl =
+    (typeof DISCORD_PROXY_URL_CONFIG !== 'undefined' && DISCORD_PROXY_URL_CONFIG) ||
+    props.getProperty('DISCORD_PROXY_URL') ||
+    '';
+  proxyUrl = proxyUrl.replace(/\/$/, '');
   var proxySecret = (typeof DISCORD_PROXY_SECRET_CONFIG !== 'undefined' && DISCORD_PROXY_SECRET_CONFIG) || (props.getProperty('DISCORD_PROXY_SECRET') || '');
 
   try {
-    if (workerUrl) {
-      return UrlFetchApp.fetch(workerUrl, buildDiscordProxyParams_(webHookUrl, params, proxySecret));
+    if (proxyUrl) {
+      return UrlFetchApp.fetch(proxyUrl, buildDiscordProxyParams_(webHookUrl, params, proxySecret));
     }
 
     var directParams = cloneDiscordParams_(params);

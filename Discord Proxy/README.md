@@ -155,7 +155,7 @@ function getDiscordWebhookRequest_(webHook, params) {
 If you are deploying the full RCE Replacements package:
 1. The helper functions `fetchDiscordWebhook_` and `getDiscordWebhookRequest_` are already built into the generated `wrapper.gs` facade. You do NOT need to copy them manually.
 2. The patching of `postMessageToDiscord` in `General.gs` (for CLA) and `Filtering.gs` (for RPB) is handled automatically by the build runner `build_combined.js`.
-3. Simply copy the files from the `RCE Replacements/` directory and configure your `DISCORD_PROXY_WORKER_URL` and `DISCORD_PROXY_SECRET` Script Properties.
+3. Simply copy the files from the `RCE Replacements/` directory and configure your `DISCORD_PROXY_URL` and `DISCORD_PROXY_SECRET` Script Properties.
 
 ## Webhook Formats
 

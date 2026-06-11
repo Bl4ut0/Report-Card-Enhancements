@@ -4,18 +4,25 @@ const bodyParser = require('body-parser');
 const crypto = require('crypto');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseIntegerEnv('PORT', 3000, 1);
 
 // Middleware
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// Configuration (Defaults mirror Cloudflare Workers)
+// Configuration
 const WCL_PROXY_SECRET = process.env.WCL_PROXY_SECRET || '';
 const DISCORD_PROXY_SECRET = process.env.DISCORD_PROXY_SECRET || '';
-const WCL_PROXY_MAX_RETRIES = parseInt(process.env.WCL_PROXY_MAX_RETRIES || '2', 10);
-const WCL_PROXY_MAX_BACKOFF_MS = parseInt(process.env.WCL_PROXY_MAX_BACKOFF_MS || '15000', 10);
-const WCL_PROXY_CACHE_TTL_SECONDS = parseInt(process.env.WCL_PROXY_CACHE_TTL_SECONDS || '0', 10); // Set > 0 to enable
-const WCL_PROXY_STALE_TTL_SECONDS = parseInt(process.env.WCL_PROXY_STALE_TTL_SECONDS || '86400', 10); // 24 hours fallback
+const WCL_PROXY_MAX_RETRIES = parseIntegerEnv('WCL_PROXY_MAX_RETRIES', 2, 0);
+const WCL_PROXY_MAX_BACKOFF_MS = parseIntegerEnv('WCL_PROXY_MAX_BACKOFF_MS', 15000, 0);
+const WCL_PROXY_REQUEST_TIMEOUT_MS = parseIntegerEnv('WCL_PROXY_REQUEST_TIMEOUT_MS', 60000, 1000);
+const WCL_PROXY_CACHE_TTL_SECONDS = parseIntegerEnv('WCL_PROXY_CACHE_TTL_SECONDS', 300, 0);
+const WCL_PROXY_STALE_TTL_SECONDS = parseIntegerEnv('WCL_PROXY_STALE_TTL_SECONDS', 86400, 0);
+const WCL_MAX_CONCURRENT = parseIntegerEnv('WCL_MAX_CONCURRENT', 1, 1);
+const WCL_LAUNCH_SPACING_MS = parseIntegerEnv('WCL_LAUNCH_SPACING_MS', 300, 0);
+const WCL_V2_MAX_CONCURRENT = parseIntegerEnv('WCL_V2_MAX_CONCURRENT', 4, 1);
+const WCL_V2_LAUNCH_SPACING_MS = parseIntegerEnv('WCL_V2_LAUNCH_SPACING_MS', 0, 0);
+const DISCORD_QUEUE_INTERVAL_MS = parseIntegerEnv('DISCORD_QUEUE_INTERVAL_MS', 500, 0);
+const DISCORD_REQUEST_TIMEOUT_MS = parseIntegerEnv('DISCORD_REQUEST_TIMEOUT_MS', 30000, 1000);
 
 const ALLOWED_HOSTS = new Set([
   'classic.warcraftlogs.com',
@@ -26,15 +33,122 @@ const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 // Local in-memory caches
 const cacheStore = new Map(); // key -> { body, headers, cachedAt }
 let discordLastRequestTime = 0;
-const DISCORD_QUEUE_INTERVAL_MS = 500;
 
 // Helper: Sleep
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function parseIntegerEnv(name, fallback, minimum) {
+  const rawValue = process.env[name];
+  if (rawValue === undefined || rawValue === '') {
+    return fallback;
+  }
+
+  const parsedValue = Number.parseInt(rawValue, 10);
+  if (!Number.isInteger(parsedValue) || parsedValue < minimum) {
+    throw new Error(`${name} must be an integer greater than or equal to ${minimum}`);
+  }
+
+  return parsedValue;
+}
 
 // Helper: SHA-256 Hash
 function sha256(data) {
   return crypto.createHash('sha256').update(data).digest('hex');
 }
+
+class RequestQueue {
+  constructor(name, maxConcurrent, launchSpacingMs) {
+    this.name = name;
+    this.maxConcurrent = maxConcurrent;
+    this.launchSpacingMs = launchSpacingMs;
+    this.active = 0;
+    this.lastLaunchAt = 0;
+    this.pending = [];
+    this.launchTimer = null;
+  }
+
+  run(task) {
+    return new Promise((resolve, reject) => {
+      this.pending.push({ task, resolve, reject });
+      this.drain();
+    });
+  }
+
+  drain() {
+    if (this.launchTimer || this.active >= this.maxConcurrent || this.pending.length === 0) {
+      return;
+    }
+
+    const waitMs = Math.max(0, this.lastLaunchAt + this.launchSpacingMs - Date.now());
+    if (waitMs > 0) {
+      this.launchTimer = setTimeout(() => {
+        this.launchTimer = null;
+        this.drain();
+      }, waitMs);
+      return;
+    }
+
+    const entry = this.pending.shift();
+    this.active++;
+    this.lastLaunchAt = Date.now();
+
+    Promise.resolve()
+      .then(entry.task)
+      .then(entry.resolve, entry.reject)
+      .finally(() => {
+        this.active--;
+        this.drain();
+      });
+
+    this.drain();
+  }
+
+  stats() {
+    return {
+      active: this.active,
+      pending: this.pending.length,
+      maxConcurrent: this.maxConcurrent,
+      launchSpacingMs: this.launchSpacingMs,
+    };
+  }
+}
+
+const wclV1Queue = new RequestQueue('wcl-v1', WCL_MAX_CONCURRENT, WCL_LAUNCH_SPACING_MS);
+const wclV2Queue = new RequestQueue('wcl-v2', WCL_V2_MAX_CONCURRENT, WCL_V2_LAUNCH_SPACING_MS);
+
+function getWclQueue(parsedUrl) {
+  return parsedUrl.pathname.startsWith('/api/v2/') ? wclV2Queue : wclV1Queue;
+}
+
+function getRetryAfterMs(response) {
+  const retryAfter = response.headers.get('retry-after');
+  if (!retryAfter) {
+    return null;
+  }
+
+  const seconds = Number(retryAfter);
+  if (Number.isFinite(seconds)) {
+    return Math.max(0, seconds * 1000);
+  }
+
+  const retryAt = Date.parse(retryAfter);
+  return Number.isNaN(retryAt) ? null : Math.max(0, retryAt - Date.now());
+}
+
+function isIpRateLimit(response, responseText) {
+  return response.status === 429 && /too many requests from this ip address/i.test(responseText);
+}
+
+app.get('/healthz', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    queues: {
+      v1: wclV1Queue.stats(),
+      v2: wclV2Queue.stats(),
+    },
+    cacheEntries: cacheStore.size,
+  });
+});
 
 /**
  * Discord Webhook Relay Endpoint
@@ -69,6 +183,7 @@ app.post('/discord', async (req, res) => {
         'Content-Type': req.headers['content-type'] || 'application/json',
       },
       body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(DISCORD_REQUEST_TIMEOUT_MS),
     });
 
     const responseBody = await response.text();
@@ -83,6 +198,7 @@ app.post('/discord', async (req, res) => {
  */
 app.post('/wcl', async (req, res) => {
   res.set('x-wcl-proxy-relayed', 'true');
+  res.set('x-wcl-proxy-runtime', 'vps');
   
   const receivedSecret = req.headers['x-wcl-proxy-secret'] || '';
   if (WCL_PROXY_SECRET && receivedSecret !== WCL_PROXY_SECRET) {
@@ -105,12 +221,24 @@ app.post('/wcl', async (req, res) => {
     return res.status(403).send(`Forbidden Target Hostname: ${parsedUrl.hostname}`);
   }
 
+  if (parsedUrl.protocol !== 'https:' || parsedUrl.port) {
+    return res.status(403).send('Warcraft Logs targets must use standard HTTPS');
+  }
+
+  const requestMethod = String(envelope.method).toUpperCase();
+  if (requestMethod !== 'GET' && requestMethod !== 'POST') {
+    return res.status(400).send(`Unsupported Target Method: ${requestMethod}`);
+  }
+
+  const wclQueue = getWclQueue(parsedUrl);
+  res.set('x-wcl-proxy-api-version', wclQueue === wclV2Queue ? 'v2' : 'v1');
+
   // Generate Cache Key
   let cacheKey = null;
   if (WCL_PROXY_CACHE_TTL_SECONDS > 0) {
     const authHeader = envelope.headers ? (envelope.headers['Authorization'] || envelope.headers['authorization'] || '') : '';
     const bodyString = envelope.body ? (typeof envelope.body === 'string' ? envelope.body : JSON.stringify(envelope.body)) : '';
-    const uniqueString = `${envelope.url}|${envelope.method}|${authHeader}|${bodyString}`;
+    const uniqueString = `${envelope.url}|${requestMethod}|${authHeader}|${bodyString}`;
     cacheKey = sha256(uniqueString);
   }
 
@@ -143,7 +271,7 @@ app.post('/wcl', async (req, res) => {
   }
 
   const fetchOptions = {
-    method: envelope.method,
+    method: requestMethod,
     headers: fetchHeaders,
   };
   if (envelope.body) {
@@ -158,12 +286,26 @@ app.post('/wcl', async (req, res) => {
 
   while (attempt <= WCL_PROXY_MAX_RETRIES) {
     try {
-      response = await fetch(envelope.url, fetchOptions);
-      responseText = await response.text();
+      const upstreamResult = await wclQueue.run(async () => {
+        const queuedResponse = await fetch(envelope.url, {
+          ...fetchOptions,
+          signal: AbortSignal.timeout(WCL_PROXY_REQUEST_TIMEOUT_MS),
+        });
+        const queuedResponseText = await queuedResponse.text();
+        return { response: queuedResponse, responseText: queuedResponseText };
+      });
+
+      response = upstreamResult.response;
+      responseText = upstreamResult.responseText;
       lastError = null;
 
       if (!RETRYABLE_STATUSES.has(response.status)) {
         break; // Non-retryable status code, exit loop
+      }
+
+      // Retrying an IP-level block without a server-provided wait only adds load.
+      if (isIpRateLimit(response, responseText) && getRetryAfterMs(response) === null) {
+        break;
       }
     } catch (error) {
       lastError = error;
@@ -172,8 +314,11 @@ app.post('/wcl', async (req, res) => {
 
     attempt++;
     if (attempt <= WCL_PROXY_MAX_RETRIES) {
-      // Backoff sleep (with jitter)
-      const sleepTime = Math.min(delay * Math.pow(2, attempt - 1) + Math.random() * 200, WCL_PROXY_MAX_BACKOFF_MS);
+      const retryAfterMs = response ? getRetryAfterMs(response) : null;
+      const exponentialBackoffMs = delay * Math.pow(2, attempt - 1) + Math.random() * 200;
+      const sleepTime = retryAfterMs === null
+        ? Math.min(exponentialBackoffMs, WCL_PROXY_MAX_BACKOFF_MS)
+        : retryAfterMs;
       await sleep(sleepTime);
     }
   }
@@ -229,5 +374,11 @@ app.post('/wcl', async (req, res) => {
 
 // Start Server
 app.listen(PORT, () => {
+  if (!WCL_PROXY_SECRET || !DISCORD_PROXY_SECRET) {
+    console.warn('Warning: one or more proxy secrets are empty. Configure both secrets before exposing this service.');
+  }
+
   console.log(`VPS Proxy Server running on port ${PORT}`);
+  console.log(`WCL V1 queue: concurrency=${WCL_MAX_CONCURRENT}, spacing=${WCL_LAUNCH_SPACING_MS}ms`);
+  console.log(`WCL V2 queue: concurrency=${WCL_V2_MAX_CONCURRENT}, spacing=${WCL_V2_LAUNCH_SPACING_MS}ms`);
 });

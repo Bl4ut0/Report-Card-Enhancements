@@ -114,7 +114,7 @@ console.log(`│  DISCORD_PROXY_SECRET  │  ${discordSecret}`);
 console.log('└──────────────────────────────────────────────────────────────┘');
 console.log('');
 console.log('┌──────────────────────────────────────────────────────────────┐');
-console.log('│  WCL_PROXY_WORKER_URL  │  (your worker URL from above)      │');
+console.log('│  WCL_PROXY_URL         │  (your /wcl URL from above)        │');
 console.log('│                        │  e.g. https://combined-api-proxy.  │');
 console.log('│                        │       YOUR_SUBDOMAIN.workers.dev   │');
 console.log('└──────────────────────────────────────────────────────────────┘');

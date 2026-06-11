@@ -1,86 +1,117 @@
 # Self-Hosted VPS Combined Proxy
 
-A containerized, self-hostable version of the Combat Log Analytics (CLA) and Role Performance Breakdown (RPB) Combined Proxy. 
+A single-package Docker deployment for the Combat Log Analytics (CLA) and Role
+Performance Breakdown (RPB) proxy. It provides:
 
-This enables running the Discord Webhook Relay and Warcraft Logs API Proxy on any Virtual Private Server (VPS) under the **free tier threshold** without relying on Cloudflare Workers.
+- Warcraft Logs V1/V2 relay at `/wcl`
+- Discord webhook relay at `/discord`
+- Automatic HTTPS through Caddy
+- Process-wide WCL V1 and V2 request queues
+- Bounded retries, response caching, and stale-cache fallback
+- A health endpoint at `/healthz`
 
----
+This deployment is intended for a VPS with its own public IP. Unlike an edge
+Worker platform, the single Node.js process can enforce one queue across all
+incoming sheet requests.
 
-## Architecture Overview
+## Requirements
 
-* **Automatic HTTPS**: Managed automatically by the lightweight **Caddy** reverse proxy using free Let's Encrypt certificates.
-* **Proxy Server**: Node.js Express service running inside a container, utilizing the local native fetch API.
-* **In-Memory Caching**: Caches Warcraft Logs GraphQL queries locally with stale-while-revalidate fallback support if the upstream API experiences 429/502/503/504 errors.
-* **Rate Limit Compatibility**: Relies on client-side spacing (`WCL_Compat.gs`) to regulate limits, requiring zero sleeping threads or connection hanging in Node.js.
+1. A Linux VPS with Docker Engine and Docker Compose v2.
+2. TCP ports `80` and `443`, plus UDP port `443`, open to the internet.
+3. A domain or subdomain with an `A`/`AAAA` record pointing to the VPS.
+4. Only one `app` container replica. Multiple replicas would create separate
+   queues and remove the process-wide concurrency guarantee.
 
----
+## Deploy
 
-## Prerequisites
-
-1. A VPS (such as a Free Tier Oracle Cloud instance, DigitalOcean, or AWS EC2) with ports `80` and `443` open to the internet.
-2. A custom domain or subdomain (e.g., `proxy.yourdomain.com`) pointing to your VPS public IP address.
-3. **Docker** and **Docker Compose** installed on the VPS.
-
----
-
-## Deployment Steps
-
-### 1. Copy Files to VPS
-Copy the contents of the `VPS Proxy/` directory onto your VPS:
-* `server.js`
-* `package.json`
-* `Dockerfile`
-* `Caddyfile`
-* `docker-compose.yml`
-
-### 2. Create the Environment File
-In the folder where you placed the files, create a `.env` file containing your configurations:
-
-```env
-# The domain or subdomain pointing to this VPS (Caddy uses this for HTTPS)
-DOMAIN=proxy.yourdomain.com
-
-# Shared secrets to authenticate your Google Sheets
-WCL_PROXY_SECRET=your_wcl_secret_here
-DISCORD_PROXY_SECRET=your_discord_secret_here
-
-# Warcraft Logs Cache Configuration
-WCL_PROXY_CACHE_TTL_SECONDS=300
-WCL_PROXY_STALE_TTL_SECONDS=86400
-
-# Retries config
-WCL_PROXY_MAX_RETRIES=2
-WCL_PROXY_MAX_BACKOFF_MS=15000
-```
-
-### 3. Build and Start the Containers
-Run the following command in the terminal on your VPS:
+Copy the entire `VPS Proxy/` folder to the VPS, then run:
 
 ```bash
-docker compose up -d --build
+cp .env.example .env
+nano .env
+chmod +x deploy.sh
+./deploy.sh
 ```
 
-This will:
-- Build the Node.js Express proxy app container.
-- Download Caddy and spin up the reverse proxy.
-- Auto-request and install Let's Encrypt SSL/TLS certificates for your custom `DOMAIN`.
-- Start the server on port `3000` (which is kept secure and only exposed via Caddy).
+The script validates the Compose configuration, builds the Node.js image, and
+starts the proxy and Caddy. Caddy obtains and renews the TLS certificate
+automatically after DNS and firewall configuration are correct.
 
----
+Check the deployment:
 
-## Google Sheet Configuration
+```bash
+docker compose ps
+docker compose logs -f
+curl https://proxy.example.com/healthz
+```
 
-Configure the Script Properties inside your Google Sheet Apps Script settings to point to your new VPS server:
+## Environment
 
-* `WCL_PROXY_WORKER_URL`: `https://proxy.yourdomain.com/wcl`
-* `WCL_PROXY_SECRET`: The `WCL_PROXY_SECRET` you set in your `.env`
-* `DISCORD_PROXY_WORKER_URL`: `https://proxy.yourdomain.com/discord`
-* `DISCORD_PROXY_SECRET`: The `DISCORD_PROXY_SECRET` you set in your `.env`
+Required:
 
----
+| Variable | Purpose |
+|---|---|
+| `DOMAIN` | Public DNS name used by Caddy, without `https://` |
+| `WCL_PROXY_SECRET` | Secret required by `/wcl` |
+| `DISCORD_PROXY_SECRET` | Secret required by `/discord` |
 
-## Commands and Logs
+Warcraft Logs behavior:
 
-* **Check Logs**: `docker compose logs -f`
-* **Restart Service**: `docker compose restart`
-* **Shut Down Service**: `docker compose down`
+| Variable | Default | Purpose |
+|---|---:|---|
+| `WCL_PROXY_MAX_RETRIES` | `2` | Retry count for retryable upstream failures |
+| `WCL_PROXY_MAX_BACKOFF_MS` | `15000` | Maximum exponential backoff |
+| `WCL_PROXY_REQUEST_TIMEOUT_MS` | `60000` | Timeout for each WCL upstream attempt |
+| `WCL_PROXY_CACHE_TTL_SECONDS` | `300` | Fresh in-memory cache lifetime; `0` disables caching |
+| `WCL_PROXY_STALE_TTL_SECONDS` | `86400` | Maximum age for stale fallback responses |
+| `WCL_MAX_CONCURRENT` | `1` | Process-wide V1 REST concurrency |
+| `WCL_LAUNCH_SPACING_MS` | `300` | Minimum delay between V1 launches |
+| `WCL_V2_MAX_CONCURRENT` | `4` | Process-wide V2 GraphQL concurrency |
+| `WCL_V2_LAUNCH_SPACING_MS` | `0` | Minimum delay between V2 launches |
+
+Discord behavior:
+
+| Variable | Default | Purpose |
+|---|---:|---|
+| `DISCORD_QUEUE_INTERVAL_MS` | `500` | Minimum interval between webhook launches |
+| `DISCORD_REQUEST_TIMEOUT_MS` | `30000` | Discord upstream request timeout |
+
+The proxy honors `Retry-After` when WCL supplies it. An IP-level `429` without a
+`Retry-After` is returned immediately rather than retried, because retrying that
+response would increase traffic while the IP is blocked.
+
+## Google Apps Script
+
+Configure these Script Properties:
+
+```text
+WCL_PROXY_URL=https://proxy.example.com/wcl
+WCL_PROXY_SECRET=<same value as .env>
+DISCORD_PROXY_URL=https://proxy.example.com/discord
+DISCORD_PROXY_SECRET=<same value as .env>
+```
+
+The same canonical proxy properties work for this deployment and any other
+provider that implements the portable proxy contract.
+
+## Operations
+
+```bash
+# View status
+docker compose ps
+
+# Follow logs
+docker compose logs -f
+
+# Rebuild after replacing package files with a newer version
+./deploy.sh
+
+# Restart without rebuilding
+docker compose restart
+
+# Stop the deployment while preserving Caddy certificates
+docker compose down
+```
+
+Caddy certificates are stored in the `caddy_data` Docker volume. Do not delete
+that volume during routine upgrades.

@@ -6,7 +6,7 @@ Copy and paste this consolidated `wrapper.gs` script into your Google Sheets App
 
 ## wrapper.gs
 
-This combined script intercepts all Warcraft Logs V1/V2 requests and Discord Webhook calls. It automatically routes them through the Cloudflare Worker proxies if the script properties are configured; otherwise, it transparently falls back to direct WCL/Discord requests.
+This combined script intercepts all Warcraft Logs V1/V2 requests and Discord Webhook calls. It automatically routes them through compatible proxy endpoints if the script properties are configured; otherwise, it transparently falls back to direct WCL/Discord requests.
 
 ```javascript
 /**
@@ -15,15 +15,15 @@ This combined script intercepts all Warcraft Logs V1/V2 requests and Discord Web
  * Warcraft Logs Compatibility Facade & Discord Webhook Relay Wrapper
  *
  * This combined file allows Google Sheets to fetch Warcraft Logs data (V1 and V2)
- * and send Discord Webhook messages optionally through Cloudflare Worker proxies.
+ * and send Discord Webhook messages optionally through compatible proxy endpoints.
  *
  * CONFIGURATION:
- *   You can configure your Cloudflare Worker details EITHER by entering them in
+ *   You can configure compatible proxy details EITHER by entering them in
  *   the global variables below, OR by adding them to Settings -> Script Properties:
- *     - WCL_PROXY_WORKER_URL    : URL to your Cloudflare Warcraft Logs proxy worker
- *     - WCL_PROXY_SECRET        : Secret password for the WCL proxy
- *     - DISCORD_PROXY_WORKER_URL: URL to your Cloudflare Discord webhook proxy worker
- *     - DISCORD_PROXY_SECRET    : Secret password for the Discord proxy
+ *     - WCL_PROXY_URL       : URL to a compatible Warcraft Logs proxy endpoint
+ *     - WCL_PROXY_SECRET    : Secret password for the WCL proxy
+ *     - DISCORD_PROXY_URL   : URL to a compatible Discord proxy endpoint
+ *     - DISCORD_PROXY_SECRET: Secret password for the Discord proxy
  *
  *   If these values are left empty/null, the sheet automatically falls back to direct,
  *   unproxied requests (direct Warcraft Logs API and direct Discord webhook deliveries).
@@ -34,12 +34,12 @@ This combined script intercepts all Warcraft Logs V1/V2 requests and Discord Web
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-// ── Optional Hardcoded Worker Configurations ─────────────────────────────────
-// Fill these in to hardcode worker options. If left null, Script Properties will be checked.
-var WCL_PROXY_WORKER_URL_CONFIG     = null; // e.g. 'https://your-worker.workers.dev/wcl'
-var WCL_PROXY_SECRET_CONFIG         = null; // e.g. 'your-wcl-proxy-secret'
-var DISCORD_PROXY_WORKER_URL_CONFIG = null; // e.g. 'https://your-worker.workers.dev/discord'
-var DISCORD_PROXY_SECRET_CONFIG     = null; // e.g. 'your-discord-proxy-secret'
+// ── Optional Hardcoded Proxy Configurations ──────────────────────────────────
+// Fill these in to hardcode proxy options. If left null, Script Properties will be checked.
+var WCL_PROXY_URL_CONFIG        = null; // e.g. 'https://proxy.example.com/wcl'
+var WCL_PROXY_SECRET_CONFIG     = null; // e.g. 'your-wcl-proxy-secret'
+var DISCORD_PROXY_URL_CONFIG    = null; // e.g. 'https://proxy.example.com/discord'
+var DISCORD_PROXY_SECRET_CONFIG = null; // e.g. 'your-discord-proxy-secret'
 
 // Global config variables for V2 GraphQL
 var WCL_V2_TOKEN_URL_ = 'https://www.warcraftlogs.com/oauth/token';
@@ -99,7 +99,7 @@ function wclUnsupported_(message) {
 
 /**
  * Internal shared fetch dispatcher.
- * Routes through the WCL Proxy if WCL_PROXY_WORKER_URL is configured.
+ * Routes through the WCL proxy if WCL_PROXY_URL is configured.
  * Otherwise, falls back to direct UrlFetchApp fetch.
  */
 function wclFetchInternal_(url, options, errorPrefix) {
@@ -118,11 +118,11 @@ function wclFetchInternal_(url, options, errorPrefix) {
   }
 
   var props = PropertiesService.getScriptProperties();
-  var workerUrl = props.getProperty('WCL_PROXY_WORKER_URL');
+  var proxyUrl = props.getProperty('WCL_PROXY_URL');
   var proxySecret = props.getProperty('WCL_PROXY_SECRET');
 
   var response;
-  if (workerUrl) {
+  if (proxyUrl) {
     var envelope = {
       url: url,
       method: options.method || 'GET'
@@ -143,7 +143,7 @@ function wclFetchInternal_(url, options, errorPrefix) {
       payload: JSON.stringify(envelope),
       muteHttpExceptions: true
     };
-    response = UrlFetchApp.fetch(workerUrl, fetchOptions);
+    response = UrlFetchApp.fetch(proxyUrl, fetchOptions);
   } else {
     // Direct fetch
     response = UrlFetchApp.fetch(url, options);
@@ -858,8 +858,8 @@ function fetchDiscordWebhook_(webHook, params) {
 }
 
 /**
- * Sends a single Discord webhook. If DISCORD_PROXY_WORKER_URL is configured,
- * the POST goes to the Worker root and the real Discord URL is sent in a
+ * Sends a single Discord webhook. If DISCORD_PROXY_URL is configured,
+ * the POST goes to the proxy endpoint and the real Discord URL is sent in a
  * header. Otherwise it falls back to direct Discord delivery.
  *
  * This function intentionally does not throw on notification failure. Discord
@@ -871,12 +871,12 @@ function fetchDiscordWebhook_(webHook, params) {
  */
 function fetchSingleDiscordWebhook_(webHookUrl, params) {
   var props = PropertiesService.getScriptProperties();
-  var workerUrl = (props.getProperty('DISCORD_PROXY_WORKER_URL') || '').replace(/\/$/, '');
+  var proxyUrl = (props.getProperty('DISCORD_PROXY_URL') || '').replace(/\/$/, '');
   var proxySecret = props.getProperty('DISCORD_PROXY_SECRET') || '';
 
   try {
-    if (workerUrl) {
-      return UrlFetchApp.fetch(workerUrl, buildDiscordProxyParams_(webHookUrl, params, proxySecret));
+    if (proxyUrl) {
+      return UrlFetchApp.fetch(proxyUrl, buildDiscordProxyParams_(webHookUrl, params, proxySecret));
     }
 
     var directParams = cloneDiscordParams_(params);

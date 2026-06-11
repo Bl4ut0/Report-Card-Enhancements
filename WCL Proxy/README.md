@@ -82,11 +82,11 @@ function fetchWarcraftLogsViaProxy_(url, options) {
   options = options || {};
 
   var props = PropertiesService.getScriptProperties();
-  var workerUrl = props.getProperty('WCL_PROXY_WORKER_URL');
+  var proxyUrl = props.getProperty('WCL_PROXY_URL');
   var proxySecret = props.getProperty('WCL_PROXY_SECRET');
 
-  if (!workerUrl)
-    throw new Error('WCL_PROXY_WORKER_URL Script Property is required.');
+  if (!proxyUrl)
+    throw new Error('WCL_PROXY_URL Script Property is required.');
 
   var envelope = {
     url: url,
@@ -99,7 +99,7 @@ function fetchWarcraftLogsViaProxy_(url, options) {
   if (options.payload !== undefined)
     envelope.body = options.payload;
 
-  return UrlFetchApp.fetch(workerUrl, {
+  return UrlFetchApp.fetch(proxyUrl, {
     method: 'POST',
     contentType: 'application/json',
     headers: {
@@ -121,19 +121,17 @@ function fetchWarcraftLogsViaProxy_(url, options) {
    ```
 
 3. **Configure Script Properties:** In the Google Apps Script editor, navigate to **Project Settings -> Script Properties** and add:
-   - `WCL_PROXY_WORKER_URL`: Set to your deployed Cloudflare Worker endpoint (e.g., `https://YOUR_WORKER.workers.dev/wcl`).
-   - `WCL_PROXY_SECRET`: Set to the same secret value configured on the Cloudflare Worker.
+   - `WCL_PROXY_URL`: Set to your compatible proxy endpoint (e.g., `https://YOUR_WORKER.workers.dev/wcl`).
+   - `WCL_PROXY_SECRET`: Set to the same secret value configured on the proxy.
 
 ## Combined Integration (Recommended)
 
 If you are using the V2 Compatibility Wrapper:
 1. Copy [WCL_Compat.gs](../V2%20Wrapper/shared/WCL_Compat.gs) (or the generated `wrapper.gs` from `RCE Replacements/`) into your Apps Script project.
-2. Configure your `WCL_PROXY_WORKER_URL` and `WCL_PROXY_SECRET` Script Properties.
-3. The wrapper has proxy envelope wrapping built-in and will automatically route both V1 and V2 queries through the Worker when these properties are present.
+2. Configure your `WCL_PROXY_URL` and `WCL_PROXY_SECRET` Script Properties.
+3. The wrapper has proxy envelope wrapping built-in and will automatically route both V1 and V2 queries through the configured endpoint when these properties are present.
 
 
 ## Current State
 
 This is a legacy standalone framework scaffold. The active production implementation is consolidated in the Combined Proxy, which integrates target validation, shared-secret validation, bounded retries, `Retry-After` support, and SHA-256 caching with client-side pacing.
-
-

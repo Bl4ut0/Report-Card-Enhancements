@@ -1,12 +1,13 @@
 # CLA + RPB Report Card Enhancements
 
-Helper scripts, Cloudflare Worker proxy support, Warcraft Logs API request-control scaffolding, and n8n automation patches for Combat Log Analytics (CLA) and Role Performance Breakdown (RPB).
+Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Logs API request-control scaffolding, and n8n automation patches for Combat Log Analytics (CLA) and Role Performance Breakdown (RPB).
 
 ## Folder Guide
 
 | Folder | Purpose |
 |---|---|
 | `Combined Proxy/` | Consolidated Cloudflare Worker proxy (Discord + WCL). Source of truth; mirrored to [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) for 1-click user deployment. |
+| `VPS Proxy/` | Docker Compose deployment with a Node.js proxy, process-wide WCL queues, and automatic HTTPS through Caddy. |
 | `V2 Wrapper/` | Warcraft Logs V1→V2 GraphQL compatibility layer and version-specific replacement sets. |
 | `RCE Replacements/` | Generated deployment-ready output files (`.gs` replacements and unified `wrapper.gs`). |
 | `n8n Automations/` | Apps Script automation patches and n8n compose setup docs. |
@@ -28,9 +29,12 @@ Helper scripts, Cloudflare Worker proxy support, Warcraft Logs API request-contr
 |---|---|
 | **Combined proxy + wrapper setup** (recommended) | [Docs/COMBINED_SYSTEM.md](Docs/COMBINED_SYSTEM.md), [Docs/SHEET_CODE.md](Docs/SHEET_CODE.md) |
 | **1-click proxy deployment** | [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) |
+| **Dedicated-IP VPS deployment** | [VPS Proxy/README.md](VPS%20Proxy/README.md) |
+| **Portable proxy contract** | [Docs/PROXY_CONTRACT.md](Docs/PROXY_CONTRACT.md) |
 | **Developer workflow & build rules** | [Docs/DESIGN_FRAMEWORK.md](Docs/DESIGN_FRAMEWORK.md) |
 | **Testing & verification** | [Docs/TESTING_GUIDE.md](Docs/TESTING_GUIDE.md) |
 | **V2 Wrapper migration** | [V2 Wrapper/README.md](V2%20Wrapper/README.md) |
+| **Developer migration handoff** | [V2 Wrapper/docs/MIGRATION_NOTES.md](V2%20Wrapper/docs/MIGRATION_NOTES.md) |
 | **n8n automation patches** | [n8n Automations/README.md](n8n%20Automations/README.md) |
 
 ## Important Boundaries

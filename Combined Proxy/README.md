@@ -69,12 +69,13 @@ Your proxy needs two secret passwords — one for Warcraft Logs requests and one
 2. Go to **Extensions → Apps Script**.
 3. Click the **⚙️ gear icon** (Project Settings) in the left sidebar.
 4. Scroll down to **Script Properties**.
-5. Add these three properties:
+5. Add these four properties:
 
 | Property Name | Value |
 |---|---|
-| `WCL_PROXY_WORKER_URL` | Your worker URL from Step 3 (e.g. `https://combined-api-proxy.xyz.workers.dev`) |
+| `WCL_PROXY_URL` | Your `/wcl` proxy URL from Step 3 (e.g. `https://combined-api-proxy.xyz.workers.dev/wcl`) |
 | `WCL_PROXY_SECRET` | The same password you set in Step 4 |
+| `DISCORD_PROXY_URL` | Your `/discord` proxy URL from Step 3 (e.g. `https://combined-api-proxy.xyz.workers.dev/discord`) |
 | `DISCORD_PROXY_SECRET` | The same password you set in Step 4 |
 
 <!-- Screenshot: Google Apps Script project settings with properties filled in -->
@@ -104,6 +105,14 @@ These are already set to sensible defaults. You only need to change them if you 
 | `WCL_PROXY_MAX_BACKOFF_MS` | `10000` | Maximum backoff delay cap (ms) |
 | `WCL_PROXY_CACHE_TTL_SECONDS` | `300` | Fresh cache duration (seconds). `0` = disabled |
 | `WCL_PROXY_STALE_TTL_SECONDS` | `86400` | How long stale cache can serve as fallback (seconds) |
+| `WCL_MAX_CONCURRENT` | `1` | Maximum V1 REST requests active in one Worker isolate |
+| `WCL_LAUNCH_SPACING_MS` | `300` | Minimum spacing between V1 REST launches in one Worker isolate |
+| `WCL_V2_MAX_CONCURRENT` | `4` | Maximum V2 GraphQL requests active in one Worker isolate |
+| `WCL_V2_LAUNCH_SPACING_MS` | `0` | Minimum spacing between V2 GraphQL launches in one Worker isolate |
+
+The Worker honors WCL's `Retry-After` header. A `429` without `Retry-After` is
+returned immediately instead of retried, avoiding repeated requests while an
+upstream IP-level block is active.
 
 ---
 

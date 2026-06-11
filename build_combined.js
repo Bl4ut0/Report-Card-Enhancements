@@ -137,14 +137,14 @@ function main() {
  * Warcraft Logs Compatibility Facade & Discord Webhook Relay Wrapper
  *
  * This combined file allows Google Sheets to fetch Warcraft Logs data (V1 and V2)
- * and send Discord Webhook messages optionally through Cloudflare Worker proxies.
+ * and send Discord Webhook messages optionally through compatible proxy endpoints.
  *
  * CONFIGURATION:
- *   You can configure your Cloudflare Worker details EITHER by entering them in
+ *   You can configure proxy details EITHER by entering them in
  *   the global variables below, OR by adding them to Settings -> Script Properties:
- *     - WCL_PROXY_WORKER_URL    : URL to your Cloudflare Warcraft Logs proxy worker
+ *     - WCL_PROXY_URL           : URL to any compatible Warcraft Logs proxy endpoint
  *     - WCL_PROXY_SECRET        : Secret password for the WCL proxy
- *     - DISCORD_PROXY_WORKER_URL: URL to your Cloudflare Discord webhook proxy worker
+ *     - DISCORD_PROXY_URL       : URL to any compatible Discord proxy endpoint
  *     - DISCORD_PROXY_SECRET    : Secret password for the Discord proxy
  *
  *   If these values are left empty/null, the sheet automatically falls back to direct,
@@ -157,10 +157,10 @@ function main() {
  */
 
 // ── Optional Hardcoded Worker Configurations ─────────────────────────────────
-// Fill these in to hardcode worker options. If left null, Script Properties will be checked.
-var WCL_PROXY_WORKER_URL_CONFIG     = null; // e.g. 'https://your-worker.workers.dev/wcl'
+// Fill these in to hardcode proxy options. If left null, Script Properties will be checked.
+var WCL_PROXY_URL_CONFIG            = null; // e.g. 'https://proxy.example.com/wcl'
 var WCL_PROXY_SECRET_CONFIG         = null; // e.g. 'your-wcl-proxy-secret'
-var DISCORD_PROXY_WORKER_URL_CONFIG = null; // e.g. 'https://your-worker.workers.dev/discord'
+var DISCORD_PROXY_URL_CONFIG        = null; // e.g. 'https://proxy.example.com/discord'
 var DISCORD_PROXY_SECRET_CONFIG     = null; // e.g. 'your-discord-proxy-secret'
 
 `;

@@ -36,7 +36,7 @@ Combined Proxy/
   Consolidated Cloudflare Worker proxy (Discord webhook relay + WCL proxy with SHA-256 caching and fallback). Source of truth; mirrored to standalone deploy subrepo.
 
 VPS Proxy/
-  Containerized, self-hostable proxy (Discord webhook relay + WCL proxy with local in-memory caching and fallback). Configured for easy VPS hosting via Docker Compose and Caddy.
+  Containerized, self-hostable proxy (Discord webhook relay + WCL proxy with process-wide V1/V2 queues, local in-memory caching, and fallback). Configured for VPS hosting via Docker Compose and automatic Caddy HTTPS.
 
 Discord Proxy/
   Legacy standalone Discord webhook relay documentation and worker scaffold.
@@ -201,18 +201,27 @@ Replacement sets must be organized by expansion, tool, and upstream source versi
 
 ## Warcraft Logs Proxy
 
-The Warcraft Logs Proxy (now part of the `Combined Proxy`) is for controlled upstream Warcraft Logs API egress. It should be treated as a reliability and pacing layer, not a limit bypass.
+The Warcraft Logs proxy is available as a Cloudflare Worker or as the
+self-hosted VPS package. Both are reliability layers, not limit bypasses.
+The sheet-facing boundary is the provider-neutral HTTP contract documented in
+[PROXY_CONTRACT.md](PROXY_CONTRACT.md); additional worker platforms can
+implement the same contract without changing `WCL_Compat.gs`.
 
 ```text
 CLA/RPB source or V2 Wrapper
-  -> Combined Proxy Worker (/wcl path)
+  -> Combined Proxy Worker (/wcl)
+     or VPS Proxy (/wcl)
      -> allowlisted Warcraft Logs API URL
      -> bounded retries for 429/502/503/504
      -> Retry-After-aware backoff
-     -> SHA-256 query caching with stale-on-error fallback
+     -> query caching with stale-on-error fallback
 ```
 
-Request serialization and pacing are implemented client-side directly in `WCL_Compat.gs` using script property configurations (e.g. `WCL_MIN_FETCH_INTERVAL_MS`) to avoid exceeding CPU time limits and holding connections open.
+Client-side pacing remains implemented in `WCL_Compat.gs`. The Cloudflare
+deployment cannot guarantee one global queue across Worker isolates. The VPS
+deployment additionally enforces process-wide V1 and V2 queues because all
+traffic passes through one long-running Node.js process with one public egress
+IP. The VPS `app` service must remain at one replica for that guarantee.
 
 ## Constraints
 

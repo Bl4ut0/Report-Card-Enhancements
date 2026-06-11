@@ -38,8 +38,8 @@ N8N_SECRET=your-shared-secret
 If using `Shared_DiscordWebhook.gs`, also set:
 
 ```text
-DISCORD_PROXY_WORKER_URL=https://your-worker.workers.dev
-DISCORD_PROXY_SECRET=your-worker-secret
+DISCORD_PROXY_URL=https://proxy.example.com/discord
+DISCORD_PROXY_SECRET=your-proxy-secret
 ```
 
 ## Deployment

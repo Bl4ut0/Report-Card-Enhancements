@@ -31,7 +31,7 @@ Patch files live one level up in `../` and are uploaded into the target Google A
 | Target | CLA and RPB |
 | Version | 0.1.0 |
 | Purpose | Patch-only Discord proxy export wrappers that route completion notices through a Cloudflare Worker. |
-| Required properties | `DISCORD_PROXY_WORKER_URL`, `DISCORD_PROXY_SECRET` |
+| Required properties | `DISCORD_PROXY_URL`, `DISCORD_PROXY_SECRET` |
 | Exposes | `runCLAExportWithDiscordProxy()`, `runRPBExportWithDiscordProxy()`, `fetchDiscordWebhook_()` |
 
 ### `../CLA_Patch_n8n.gs`

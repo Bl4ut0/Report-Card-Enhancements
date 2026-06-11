@@ -6,17 +6,17 @@
  * Purpose:
  *   Adds patch-only export wrappers that temporarily clear the sheet-level
  *   Discord webhook, run the locked CLA/RPB export function, restore the webhook,
- *   then send a completion notice through a Cloudflare Worker using headers.
+ *   then send a completion notice through a compatible proxy using headers.
  *
- *   This avoids putting a Worker URL in the sheet webhook field, avoids editing
+ *   This avoids putting a proxy URL in the sheet webhook field, avoids editing
  *   locked source files, and keeps Discord notification failures from blocking
  *   report export completion.
  *
  * Setup:
  *   1. Upload this file to the CLA/RPB Apps Script project.
  *   2. Set Script Properties:
- *      DISCORD_PROXY_WORKER_URL = https://your-worker.workers.dev
- *      DISCORD_PROXY_SECRET     = your Worker secret
+ *      DISCORD_PROXY_URL    = https://proxy.example.com/discord
+ *      DISCORD_PROXY_SECRET = your proxy secret
  *   3. Leave the sheet Instructions Discord webhook field as the normal raw
  *      Discord URL:
  *      https://discord.com/api/webhooks/ID/TOKEN
@@ -176,8 +176,8 @@ function fetchDiscordWebhook_(webHook, params) {
 }
 
 /**
- * Sends a single Discord webhook. If DISCORD_PROXY_WORKER_URL is configured,
- * the POST goes to the Worker root and the real Discord URL is sent in a
+ * Sends a single Discord webhook. If a Discord proxy URL is configured,
+ * the POST goes to the proxy endpoint and the real Discord URL is sent in a
  * header. Otherwise it falls back to direct Discord delivery.
  *
  * This function intentionally does not throw on notification failure. Discord
@@ -189,13 +189,16 @@ function fetchDiscordWebhook_(webHook, params) {
  */
 function fetchSingleDiscordWebhook_(webHookUrl, params) {
   var props = PropertiesService.getScriptProperties();
-  var workerUrl = (typeof DISCORD_PROXY_WORKER_URL_CONFIG !== 'undefined' && DISCORD_PROXY_WORKER_URL_CONFIG) || (props.getProperty('DISCORD_PROXY_WORKER_URL') || '');
-  workerUrl = workerUrl.replace(/\/$/, '');
+  var proxyUrl =
+    (typeof DISCORD_PROXY_URL_CONFIG !== 'undefined' && DISCORD_PROXY_URL_CONFIG) ||
+    props.getProperty('DISCORD_PROXY_URL') ||
+    '';
+  proxyUrl = proxyUrl.replace(/\/$/, '');
   var proxySecret = (typeof DISCORD_PROXY_SECRET_CONFIG !== 'undefined' && DISCORD_PROXY_SECRET_CONFIG) || (props.getProperty('DISCORD_PROXY_SECRET') || '');
 
   try {
-    if (workerUrl) {
-      return UrlFetchApp.fetch(workerUrl, buildDiscordProxyParams_(webHookUrl, params, proxySecret));
+    if (proxyUrl) {
+      return UrlFetchApp.fetch(proxyUrl, buildDiscordProxyParams_(webHookUrl, params, proxySecret));
     }
 
     var directParams = cloneDiscordParams_(params);

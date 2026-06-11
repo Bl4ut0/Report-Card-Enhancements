@@ -1,34 +1,71 @@
-version: '3.8'
-
 services:
   app:
     build: .
-    restart: always
+    restart: unless-stopped
+    init: true
     environment:
-      - PORT=3000
-      - WCL_PROXY_SECRET=${WCL_PROXY_SECRET}
-      - DISCORD_PROXY_SECRET=${DISCORD_PROXY_SECRET}
-      - WCL_PROXY_MAX_RETRIES=${WCL_PROXY_MAX_RETRIES:-2}
-      - WCL_PROXY_MAX_BACKOFF_MS=${WCL_PROXY_MAX_BACKOFF_MS:-15000}
-      - WCL_PROXY_CACHE_TTL_SECONDS=${WCL_PROXY_CACHE_TTL_SECONDS:-300}
-      - WCL_PROXY_STALE_TTL_SECONDS=${WCL_PROXY_STALE_TTL_SECONDS:-86400}
+      PORT: "3000"
+      WCL_PROXY_SECRET: ${WCL_PROXY_SECRET:?Set WCL_PROXY_SECRET in .env}
+      DISCORD_PROXY_SECRET: ${DISCORD_PROXY_SECRET:?Set DISCORD_PROXY_SECRET in .env}
+      WCL_PROXY_MAX_RETRIES: ${WCL_PROXY_MAX_RETRIES:-2}
+      WCL_PROXY_MAX_BACKOFF_MS: ${WCL_PROXY_MAX_BACKOFF_MS:-15000}
+      WCL_PROXY_REQUEST_TIMEOUT_MS: ${WCL_PROXY_REQUEST_TIMEOUT_MS:-60000}
+      WCL_PROXY_CACHE_TTL_SECONDS: ${WCL_PROXY_CACHE_TTL_SECONDS:-300}
+      WCL_PROXY_STALE_TTL_SECONDS: ${WCL_PROXY_STALE_TTL_SECONDS:-86400}
+      WCL_MAX_CONCURRENT: ${WCL_MAX_CONCURRENT:-1}
+      WCL_LAUNCH_SPACING_MS: ${WCL_LAUNCH_SPACING_MS:-300}
+      WCL_V2_MAX_CONCURRENT: ${WCL_V2_MAX_CONCURRENT:-4}
+      WCL_V2_LAUNCH_SPACING_MS: ${WCL_V2_LAUNCH_SPACING_MS:-0}
+      DISCORD_QUEUE_INTERVAL_MS: ${DISCORD_QUEUE_INTERVAL_MS:-500}
+      DISCORD_REQUEST_TIMEOUT_MS: ${DISCORD_REQUEST_TIMEOUT_MS:-30000}
+    expose:
+      - "3000"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
     networks:
       - proxy-net
 
   caddy:
     image: caddy:2-alpine
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     environment:
-      - DOMAIN=${DOMAIN}
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
     networks:
       - proxy-net
 

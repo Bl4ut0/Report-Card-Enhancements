@@ -81,8 +81,11 @@ The Cloudflare Worker proxy code is maintained in two locations:
 
 ### Deployment Rules:
 - **No Duplicate Worker Folders:** Do not replicate worker files or folders into `RCE Replacements/` or sub-system directories.
-- **Pacing is Client-Side Only:** No request queuing, sleeping, or delay loops should ever be added back to the Cloudflare Worker code. Sleeping inside Workers holds connections open and exceeds CPU time/duration limits on the free tier. All pacing must remain client-side in `WCL_Compat.gs`.
+- **Request Control is Sheet-Side:** No request queuing, sleeping, or delay loops should be added to the Cloudflare Worker code. Per-request pacing and cooldown handling belong in `WCL_Compat.gs`; version-specific grouping of known high-volume calls may remain in replacement files such as `Consumables.gs`.
 - **Sync Updates:** After modifying `Combined Proxy/`, sync changes to `RCE-Proxy` using the commands in [Combined Proxy/SYNC_GUIDE.md](../Combined%20Proxy/SYNC_GUIDE.md). Pushing to `RCE-Proxy` triggers automatic redeployment for all users who forked it.
+- **Portable Contract:** Sheet code must use the provider-neutral contract in
+  [PROXY_CONTRACT.md](PROXY_CONTRACT.md). Provider-specific APIs and runtime
+  assumptions belong only inside their deployment implementation.
 
 ---
 
@@ -99,12 +102,34 @@ The `tests/` directory contains tools for verifying that the V2 GraphQL compatib
 
 ---
 
-## 6. Security & Credentials
+## 6. VPS Proxy Deployment Guidelines
+
+The self-hosted deployment is maintained in [VPS Proxy/](../VPS%20Proxy/). It
+is a separate deployment target from the Cloudflare Worker and should not be
+mirrored into `Combined Proxy/` or generated sheet output.
+
+- The Node.js service, Dockerfile, Compose file, Caddyfile, environment template,
+  and deployment script form one deployable package.
+- Process-wide WCL queues belong in the VPS service because a single long-running
+  Node.js process can coordinate all requests.
+- Run exactly one `app` replica. Horizontal replicas have independent memory and
+  therefore independent queues.
+- Keep the Node.js port private to the Compose network. Caddy is the only public
+  entry point and manages HTTPS certificates.
+- The existing Apps Script property names can point to either deployment target;
+  no separate VPS-specific sheet wrapper is required.
+
+---
+
+## 7. Security & Credentials
 
 - Never commit client IDs, client secrets, API keys, webhook URLs, proxy URLs, or secret passwords.
 - **Excel files (`*.xlsx`)** are git-ignored. They contain local test exports only.
 - **Google Apps Script:** Configure worker URLs and secrets using **Settings → Script Properties** inside the Google Sheet Apps Script dashboard.
 - **Cloudflare Worker:** Store secrets (`WCL_PROXY_SECRET`, `DISCORD_PROXY_SECRET`) in the Cloudflare Dashboard under Worker Settings → Variables → Secrets.
+- **VPS Proxy:** Store `DOMAIN`, `WCL_PROXY_SECRET`, and
+  `DISCORD_PROXY_SECRET` in `VPS Proxy/.env` on the server. Never commit that
+  file.
 - **Local Testing:**
   - Standard environment configurations belong in `.env` inside the `tests/` directory (git-ignored).
   - Local Wrangler development variables and secrets belong in `.dev.vars` inside `Combined Proxy/` (git-ignored).

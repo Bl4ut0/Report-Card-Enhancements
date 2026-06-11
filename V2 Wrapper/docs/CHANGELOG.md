@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Added `wclFetchTables_()` batching for high-volume table request groups.
+- Updated TBC CLA `v1.6.0a` Consumables request orchestration to batch boss and
+  player table reads while preserving its evaluation and sheet-output logic.
+- Documented why API compatibility can live in the wrapper but synchronous
+  request grouping requires a version-specific caller change.
+- Documented that the Consumables rate-limit fix requires both `wrapper.gs` and
+  `Consumables.gs`.
+
 ## [1.0.0] - 2026-05-29
 
 - Fully implemented Warcraft Logs V2 GraphQL compatibility adapters in `WCL_Compat.gs` supporting both V1 REST API Keys and V2 OAuth Client Credentials.
@@ -11,4 +21,3 @@
 - Fixed `Utilities.base64Encode` UTF-8 charset mapping to avoid script runtime exceptions in Google Apps Script.
 - Resolved Consumables formatting discrepancy in CLA by correcting brace scoping in `Consumables.gs`.
 - Verified end-to-end compatibility and verified output parity against live reports under both V1 and V2 credentials.
-

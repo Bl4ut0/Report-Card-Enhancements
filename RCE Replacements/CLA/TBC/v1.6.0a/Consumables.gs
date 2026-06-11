@@ -218,32 +218,42 @@ function populateBuffConsumables() {
 
   var bossSummaryDataAll = [];
   var bossDamageDataAll = [];
-  var fightsParsed = 0;
+  var bossTableRequests = [];
+  var bossTableTargets = [];
   allFightsData.fights.forEach(function (fight, fightCount) {
     if (fight.boss != null && fight.boss > 0 && fight.start_time >= sectionToLookAtStart && fight.end_time <= sectionToLookAtEnd) {
       bossSummaryDataAll[fightCount] = [];
-      // Wrapper Replacement for boss summary table
-      bossSummaryDataAll[fightCount].push(wclFetchTable_(api_key, logId, "summary", {
-        lang: lang,
-        start: fight.start_time,
-        end: fight.end_time
-      }));
-      bossSummaryDataAll[fightCount].push(fight.id.toString());
       bossDamageDataAll[fightCount] = [];
-      // Wrapper Replacement for boss damage-done table with specific ability
-      bossDamageDataAll[fightCount].push(wclFetchTable_(api_key, logId, "damage-done", {
-        lang: lang,
-        start: fight.start_time,
-        end: fight.end_time,
-        abilityid: 27187
-      }));
-      bossDamageDataAll[fightCount].push(fight.id.toString());
-      fightsParsed++;
-      if (fightsParsed % 5 == 0)
-        Utilities.sleep(200);
+
+      bossTableRequests.push({
+        dataType: "summary",
+        options: {
+          lang: lang,
+          start: fight.start_time,
+          end: fight.end_time
+        }
+      });
+      bossTableTargets.push({ fightCount: fightCount, fightId: fight.id.toString(), type: "summary" });
+
+      bossTableRequests.push({
+        dataType: "damage-done",
+        options: {
+          lang: lang,
+          start: fight.start_time,
+          end: fight.end_time,
+          abilityid: 27187
+        }
+      });
+      bossTableTargets.push({ fightCount: fightCount, fightId: fight.id.toString(), type: "damage" });
     }
   })
-  Utilities.sleep(100);
+
+  var bossTableResults = wclFetchTables_(api_key, logId, bossTableRequests);
+  bossTableTargets.forEach(function (target, targetIndex) {
+    var targetArray = target.type == "summary" ? bossSummaryDataAll[target.fightCount] : bossDamageDataAll[target.fightCount];
+    targetArray.push(bossTableResults[targetIndex]);
+    targetArray.push(target.fightId);
+  });
 
   var playersFound = 0;
   allPlayersByNameAsc.forEach(function (playerByNameAsc, playerCountByNameAsc) {
@@ -251,15 +261,17 @@ function populateBuffConsumables() {
       var playerRow = [];
       playerRow[0] = [];
       var bossBuffDataAll = [];
-      var playerFightCount = 0;
-      // Wrapper Replacement for player necklace buffs tracking
-      var allNecksBuffData = wclFetchTable_(api_key, logId, "buffs", {
-        lang: lang,
-        start: sectionToLookAtStart,
-        end: sectionToLookAtEnd,
-        targetid: playerByNameAsc.id,
-        encounter: -2
-      });
+      var playerBuffRequests = [{
+        dataType: "buffs",
+        options: {
+          lang: lang,
+          start: sectionToLookAtStart,
+          end: sectionToLookAtEnd,
+          targetid: playerByNameAsc.id,
+          encounter: -2
+        }
+      }];
+      var playerBossTargets = [];
       var bossCovered = [];
       var jcNeckFound = [];
       var suboptimalStuffFound = "";
@@ -269,22 +281,27 @@ function populateBuffConsumables() {
       allFightsData.fights.forEach(function (fight, fightCount) {
         if (fight.boss != null && fight.boss > 0 && fight.start_time >= sectionToLookAtStart && fight.end_time <= sectionToLookAtEnd) {
           bossBuffDataAll[fightCount] = [];
-          // Wrapper Replacement for specific fight buffs summary
-          var bossData = wclFetchTable_(api_key, logId, "buffs", {
-            lang: lang,
-            start: fight.start_time,
-            end: fight.end_time,
-            sourceid: playerByNameAsc.id
+          playerBuffRequests.push({
+            dataType: "buffs",
+            options: {
+              lang: lang,
+              start: fight.start_time,
+              end: fight.end_time,
+              sourceid: playerByNameAsc.id
+            }
           });
-          bossBuffDataAll[fightCount].push(bossData);
-          bossBuffDataAll[fightCount].push(fight.id.toString());
-          if (bossData != null && bossData.auras != null && bossData.auras.length > 0) {
-            playerFightCount++;
-            if (playerFightCount % 5 == 0)
-              Utilities.sleep(500);
-          }
+          playerBossTargets.push({ fightCount: fightCount, fightId: fight.id.toString() });
         }
       })
+
+      var playerBuffResults = wclFetchTables_(api_key, logId, playerBuffRequests);
+      var allNecksBuffData = playerBuffResults[0] || { auras: [] };
+      playerBossTargets.forEach(function (target, targetIndex) {
+        var bossData = playerBuffResults[targetIndex + 1] || { auras: [] };
+        bossBuffDataAll[target.fightCount].push(bossData);
+        bossBuffDataAll[target.fightCount].push(target.fightId);
+      });
+
       var range = sheet.getRange(playersFound + firstPlayerNameRow, firstPlayerNameColumn);
       range.setValue(playerByNameAsc.name).setBackground(getColourForPlayerClass(playerByNameAsc.type)).setFontWeight("bold");
       var names = "";

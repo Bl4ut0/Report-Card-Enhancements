@@ -20,9 +20,9 @@ let wclLastLaunchTime = 0;
 let discordLastRequestTime = 0;
 
 // Configurable queue intervals
-const DEFAULT_WCL_MAX_CONCURRENT = 5;
+const DEFAULT_WCL_MAX_CONCURRENT = 1;
 const DEFAULT_WCL_LAUNCH_SPACING_MS = 300;
-const DEFAULT_WCL_V2_MAX_CONCURRENT = 15;
+const DEFAULT_WCL_V2_MAX_CONCURRENT = 4;
 const DEFAULT_WCL_V2_LAUNCH_SPACING_MS = 0;
 const DISCORD_QUEUE_INTERVAL_MS = 500;
 
@@ -212,7 +212,12 @@ async function handleWclProxy(request, env) {
           break;
         }
 
-        const retryAfterMs = getRetryAfterMs(response.headers.get('retry-after'), maxBackoffMs);
+        const retryAfterHeader = response.headers.get('retry-after');
+        if (response.status === 429 && !retryAfterHeader) {
+          break;
+        }
+
+        const retryAfterMs = getRetryAfterMs(retryAfterHeader, maxBackoffMs);
         await sleep(retryAfterMs || Math.min(3000 * Math.pow(2, attempt), maxBackoffMs));
       } catch (err) {
         fetchError = err;
@@ -241,6 +246,7 @@ async function handleWclProxy(request, env) {
           'x-wcl-proxy-attempts': attempts.toString(),
           'x-wcl-proxy-cache': 'miss',
           'x-wcl-proxy-relayed': 'true',
+          'x-wcl-proxy-runtime': 'cloudflare-worker',
         }
       });
     }
@@ -357,6 +363,7 @@ function withProxyHeaders(response, attempts, cacheStatus) {
   headers.set('x-wcl-proxy-attempts', attempts.toString());
   headers.set('x-wcl-proxy-cache', cacheStatus);
   headers.set('x-wcl-proxy-relayed', 'true');
+  headers.set('x-wcl-proxy-runtime', 'cloudflare-worker');
 
   return new Response(response.clone().body, {
     status: response.status,

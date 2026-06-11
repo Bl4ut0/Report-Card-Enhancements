@@ -79,12 +79,26 @@ Configure these in [Combined Proxy/wrangler.toml](../Combined%20Proxy/wrangler.t
 - `WCL_PROXY_MAX_BACKOFF_MS`: Bounded backoff delay cap (default: `10000` ms).
 - `WCL_PROXY_CACHE_TTL_SECONDS`: Short-term fresh cache duration. Set to > 0 (e.g., `300` for 5 minutes) to enable caching.
 - `WCL_PROXY_STALE_TTL_SECONDS`: Storage time for stale cache fallback (default: `86400` / 24 hours).
+- `WCL_MAX_CONCURRENT`: Maximum V1 REST requests active in one Worker isolate (default: `1`).
+- `WCL_LAUNCH_SPACING_MS`: Minimum delay between V1 REST launches in one Worker isolate (default: `300` ms).
+- `WCL_V2_MAX_CONCURRENT`: Maximum V2 GraphQL requests active in one Worker isolate (default: `4`).
+- `WCL_V2_LAUNCH_SPACING_MS`: Minimum delay between V2 GraphQL launches in one Worker isolate (default: `0` ms).
+
+The Worker does not retry a WCL `429` unless WCL provides a `Retry-After`
+header. This prevents one sheet request from multiplying an IP-level rejection
+into several upstream attempts.
 
 ---
 
 ## 3. Google Apps Script Integration
 
 All auxiliary script logic is consolidated into a single file named `wrapper.gs` inside each built era/tool directory under `RCE Replacements/`.
+
+Most source migration consists of replacing direct V1 fetches with wrapper
+calls. High-volume synchronous loops may also require version-specific batching;
+the TBC CLA Consumables page is the current example. See the
+[V2 migration notes](../V2%20Wrapper/docs/MIGRATION_NOTES.md) for the developer
+handoff and installation distinction.
 
 ### Build Runner Setup
 Because the WCL V2 Wrapper and the Discord Proxy modify the same sheet files, you must run the build script to generate the combined codebase:
@@ -103,9 +117,32 @@ This script:
 
 ### Sheet-Side Script Properties
 Add these script properties to your Google Apps Script projects:
-* `WCL_PROXY_WORKER_URL`: `https://YOUR_WORKER.workers.dev/wcl`
+* `WCL_PROXY_URL`: `https://YOUR_PROXY.example/wcl`
 * `WCL_PROXY_SECRET`: The secret configured on your worker.
-* `DISCORD_PROXY_WORKER_URL`: `https://YOUR_WORKER.workers.dev/discord`
+* `DISCORD_PROXY_URL`: `https://YOUR_PROXY.example/discord`
 * `DISCORD_PROXY_SECRET`: The secret configured on your worker.
 
+Any provider can be used when it implements the
+[portable proxy contract](PROXY_CONTRACT.md).
+
 *(Note: If these properties are left blank, the sheet automatically falls back to direct WCL and Discord calls, allowing fully normal operation without workers.)*
+
+---
+
+## 4. Dedicated-IP VPS Deployment
+
+For sustained automation or when Warcraft Logs rejects shared Cloudflare Worker
+egress, deploy the package in [VPS Proxy/](../VPS%20Proxy/). It runs the same
+`/wcl` and `/discord` contracts behind automatic Caddy HTTPS, so the existing
+Apps Script properties can point to it without wrapper changes.
+
+The VPS service adds process-wide queues that a distributed Worker cannot
+guarantee:
+
+- V1 REST defaults to one active upstream request with 300 ms launch spacing.
+- V2 GraphQL defaults to four active upstream requests.
+- All limits are configurable through `VPS Proxy/.env`.
+- The Compose deployment intentionally runs one application replica so every
+  request shares the same queue and VPS egress IP.
+
+See [VPS Proxy/README.md](../VPS%20Proxy/README.md) for deployment instructions.
