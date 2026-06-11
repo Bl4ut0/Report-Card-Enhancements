@@ -212,11 +212,22 @@ async function handleWclProxy(request, env) {
           break;
         }
 
-        const retryAfterHeader = response.headers.get('retry-after');
-        if (response.status === 429 && !retryAfterHeader) {
-          break;
+        if (response.status === 429) {
+          const retryAfterHeader = response.headers.get('retry-after');
+          if (retryAfterHeader) {
+            const parsedDelayMs = parseRetryAfterHeaderToMs(retryAfterHeader);
+            if (parsedDelayMs > maxBackoffMs) {
+              // The server wants us to wait longer than our maximum backoff window.
+              // Retrying now is guaranteed to be too early and will spam/reinforce the ban.
+              break;
+            }
+          } else {
+            // 429 without a retry-after header should not be retried to avoid hammering.
+            break;
+          }
         }
 
+        const retryAfterHeader = response.headers.get('retry-after');
         const retryAfterMs = getRetryAfterMs(retryAfterHeader, maxBackoffMs);
         await sleep(retryAfterMs || Math.min(3000 * Math.pow(2, attempt), maxBackoffMs));
       } catch (err) {
@@ -411,6 +422,24 @@ function parsePositiveInteger(value, fallback) {
     return fallback;
   }
   return parsed;
+}
+
+function parseRetryAfterHeaderToMs(retryAfter) {
+  if (!retryAfter) {
+    return 0;
+  }
+
+  const seconds = Number.parseFloat(retryAfter);
+  if (Number.isFinite(seconds)) {
+    return seconds * 1000;
+  }
+
+  const retryAt = Date.parse(retryAfter);
+  if (Number.isFinite(retryAt)) {
+    return Math.max(retryAt - Date.now(), 0);
+  }
+
+  return 0;
 }
 
 function getRetryAfterMs(retryAfter, maxBackoffMs) {
