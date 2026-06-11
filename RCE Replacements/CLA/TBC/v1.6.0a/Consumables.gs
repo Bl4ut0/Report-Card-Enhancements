@@ -277,6 +277,7 @@ function populateBuffConsumables() {
       var suboptimalStuffFound = "";
       var badBuffFoodFound = [];
       var wellFedName = "";
+      var playerFightCount = 0;
 
       allFightsData.fights.forEach(function (fight, fightCount) {
         if (fight.boss != null && fight.boss > 0 && fight.start_time >= sectionToLookAtStart && fight.end_time <= sectionToLookAtEnd) {
@@ -300,6 +301,9 @@ function populateBuffConsumables() {
         var bossData = playerBuffResults[targetIndex + 1] || { auras: [] };
         bossBuffDataAll[target.fightCount].push(bossData);
         bossBuffDataAll[target.fightCount].push(target.fightId);
+        if (bossData != null && bossData.auras != null && bossData.auras.length > 0) {
+          playerFightCount++;
+        }
       });
 
       var range = sheet.getRange(playersFound + firstPlayerNameRow, firstPlayerNameColumn);
