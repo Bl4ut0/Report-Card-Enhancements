@@ -72,7 +72,7 @@ Community Discord: https://discord.gg/nGvt5zH
 | Version / Era | CLA Upstream Credit | RPB Upstream Credit | Repo Release State |
 |---|---|---|---|
 | Vanilla | @Shariva | @Shariva | Scaffold only; no committed version-specific patches/examples yet. |
-| TBC | @Shariva | @Shariva | Unified wrapper and RCE Replacements generated for CLA/RPB `v1.6.0a`; V2 Wrapper fully implemented/verified for both CLA and RPB `v1.6.0a` using V2 credentials; WCL Proxy scaffolds exist; automation patches are still generic pre-1.0. |
+| TBC | @Shariva | @Shariva | Completed V2 Wrapper release. Consolidated `wrapper.gs` and RCE replacements generated for both CLA and RPB `v1.6.0a`; fully optimized for rate-limiting via player/debuff query batching. Verified direct and proxy modes. |
 | Season of Discovery | Community, mainly @Tallia / @Pazrea | Community, mainly @Tallia / @Pazrea | Scaffold only; no committed version-specific patches/examples yet. |
 | Wrath of the Lich King | @Shariva | @Shariva | Scaffold only; no committed version-specific patches/examples yet. |
 | Cataclysm | Community CLA managed by @BZ, with substantial coding by @Salino | No known community RPB version | CLA scaffold only; no RPB path unless a community RPB appears. |
