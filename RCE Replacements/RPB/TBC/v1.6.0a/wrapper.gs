@@ -1280,9 +1280,13 @@ function fetchSingleDiscordWebhook_(webHookUrl, params) {
   var workerUrl = '';
   var proxySecret = '';
   if (proxyEnabled) {
-    workerUrl = (typeof DISCORD_PROXY_WORKER_URL_CONFIG !== 'undefined' && DISCORD_PROXY_WORKER_URL_CONFIG) || (props.getProperty('DISCORD_PROXY_WORKER_URL') || '');
+    var configUrl = (typeof DISCORD_PROXY_URL_CONFIG !== 'undefined' && DISCORD_PROXY_URL_CONFIG) || 
+                    (typeof DISCORD_PROXY_WORKER_URL_CONFIG !== 'undefined' && DISCORD_PROXY_WORKER_URL_CONFIG) || '';
+    var propUrl = props.getProperty('DISCORD_PROXY_URL') || props.getProperty('DISCORD_PROXY_WORKER_URL') || '';
+    workerUrl = configUrl || propUrl;
     workerUrl = workerUrl.replace(/\/$/, '');
-    proxySecret = (typeof DISCORD_PROXY_SECRET_CONFIG !== 'undefined' && DISCORD_PROXY_SECRET_CONFIG) || (props.getProperty('DISCORD_PROXY_SECRET') || '');
+    proxySecret = (typeof DISCORD_PROXY_SECRET_CONFIG !== 'undefined' && DISCORD_PROXY_SECRET_CONFIG) || 
+                  (props.getProperty('DISCORD_PROXY_SECRET') || '');
   }
 
   try {
