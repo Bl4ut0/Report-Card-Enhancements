@@ -189,16 +189,20 @@ function fetchDiscordWebhook_(webHook, params) {
  */
 function fetchSingleDiscordWebhook_(webHookUrl, params) {
   var props = PropertiesService.getScriptProperties();
-  var proxyUrl =
-    (typeof DISCORD_PROXY_URL_CONFIG !== 'undefined' && DISCORD_PROXY_URL_CONFIG) ||
-    props.getProperty('DISCORD_PROXY_URL') ||
-    '';
-  proxyUrl = proxyUrl.replace(/\/$/, '');
-  var proxySecret = (typeof DISCORD_PROXY_SECRET_CONFIG !== 'undefined' && DISCORD_PROXY_SECRET_CONFIG) || (props.getProperty('DISCORD_PROXY_SECRET') || '');
+  var proxyEnabledProp = props.getProperty('DISCORD_PROXY_ENABLED');
+  var proxyEnabled = proxyEnabledProp === null || proxyEnabledProp === 'true' || proxyEnabledProp === true || proxyEnabledProp === 'TRUE';
+
+  var workerUrl = '';
+  var proxySecret = '';
+  if (proxyEnabled) {
+    workerUrl = (typeof DISCORD_PROXY_WORKER_URL_CONFIG !== 'undefined' && DISCORD_PROXY_WORKER_URL_CONFIG) || (props.getProperty('DISCORD_PROXY_WORKER_URL') || '');
+    workerUrl = workerUrl.replace(/\/$/, '');
+    proxySecret = (typeof DISCORD_PROXY_SECRET_CONFIG !== 'undefined' && DISCORD_PROXY_SECRET_CONFIG) || (props.getProperty('DISCORD_PROXY_SECRET') || '');
+  }
 
   try {
-    if (proxyUrl) {
-      return UrlFetchApp.fetch(proxyUrl, buildDiscordProxyParams_(webHookUrl, params, proxySecret));
+    if (workerUrl) {
+      return UrlFetchApp.fetch(workerUrl, buildDiscordProxyParams_(webHookUrl, params, proxySecret));
     }
 
     var directParams = cloneDiscordParams_(params);

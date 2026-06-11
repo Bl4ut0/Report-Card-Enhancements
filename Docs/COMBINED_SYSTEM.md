@@ -118,14 +118,16 @@ This script:
 ### Sheet-Side Script Properties
 Add these script properties to your Google Apps Script projects:
 * `WCL_PROXY_URL`: `https://YOUR_PROXY.example/wcl`
-* `WCL_PROXY_SECRET`: The secret configured on your worker.
+* `WCL_PROXY_SECRET`: The secret configured on your worker/VPS.
+* `WCL_PROXY_ENABLED`: Set to `false` to temporarily bypass the WCL proxy and hit the API directly (defaults to `true`).
 * `DISCORD_PROXY_URL`: `https://YOUR_PROXY.example/discord`
-* `DISCORD_PROXY_SECRET`: The secret configured on your worker.
+* `DISCORD_PROXY_SECRET`: The secret configured on your worker/VPS.
+* `DISCORD_PROXY_ENABLED`: Set to `false` to temporarily bypass the Discord proxy and post directly (defaults to `true`).
 
 Any provider can be used when it implements the
 [portable proxy contract](PROXY_CONTRACT.md).
 
-*(Note: If these properties are left blank, the sheet automatically falls back to direct WCL and Discord calls, allowing fully normal operation without workers.)*
+*(Note: If the `URL` properties are left blank, or if the `ENABLED` toggles are set to `false`, the sheet automatically falls back to direct WCL and Discord calls, allowing fully normal operation without proxy relays.)*
 
 ---
 

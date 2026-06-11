@@ -233,10 +233,15 @@ function wclFetchInternal_(url, options, errorPrefix) {
     }
   }
 
-  var proxyUrl =
-    (typeof WCL_PROXY_URL_CONFIG !== 'undefined' && WCL_PROXY_URL_CONFIG) ||
-    wclGetProperty_('WCL_PROXY_URL');
-  var proxySecret = (typeof WCL_PROXY_SECRET_CONFIG !== 'undefined' && WCL_PROXY_SECRET_CONFIG) || wclGetProperty_('WCL_PROXY_SECRET');
+  var proxyEnabledProp = wclGetProperty_('WCL_PROXY_ENABLED');
+  var proxyEnabled = proxyEnabledProp === null || proxyEnabledProp === 'true' || proxyEnabledProp === true || proxyEnabledProp === 'TRUE';
+
+  var proxyUrl = null;
+  var proxySecret = null;
+  if (proxyEnabled) {
+    proxyUrl = (typeof WCL_PROXY_URL_CONFIG !== 'undefined' && WCL_PROXY_URL_CONFIG) || wclGetProperty_('WCL_PROXY_URL');
+    proxySecret = (typeof WCL_PROXY_SECRET_CONFIG !== 'undefined' && WCL_PROXY_SECRET_CONFIG) || wclGetProperty_('WCL_PROXY_SECRET');
+  }
 
   // Determine if this is V2 (GraphQL) or V1 (REST)
   var isV2 = (errorPrefix && errorPrefix.indexOf('V2') > -1) || url.indexOf('/api/v2/') > -1 || url.indexOf('/oauth/') > -1;
@@ -1238,16 +1243,20 @@ function fetchDiscordWebhook_(webHook, params) {
  */
 function fetchSingleDiscordWebhook_(webHookUrl, params) {
   var props = PropertiesService.getScriptProperties();
-  var proxyUrl =
-    (typeof DISCORD_PROXY_URL_CONFIG !== 'undefined' && DISCORD_PROXY_URL_CONFIG) ||
-    props.getProperty('DISCORD_PROXY_URL') ||
-    '';
-  proxyUrl = proxyUrl.replace(/\/$/, '');
-  var proxySecret = (typeof DISCORD_PROXY_SECRET_CONFIG !== 'undefined' && DISCORD_PROXY_SECRET_CONFIG) || (props.getProperty('DISCORD_PROXY_SECRET') || '');
+  var proxyEnabledProp = props.getProperty('DISCORD_PROXY_ENABLED');
+  var proxyEnabled = proxyEnabledProp === null || proxyEnabledProp === 'true' || proxyEnabledProp === true || proxyEnabledProp === 'TRUE';
+
+  var workerUrl = '';
+  var proxySecret = '';
+  if (proxyEnabled) {
+    workerUrl = (typeof DISCORD_PROXY_WORKER_URL_CONFIG !== 'undefined' && DISCORD_PROXY_WORKER_URL_CONFIG) || (props.getProperty('DISCORD_PROXY_WORKER_URL') || '');
+    workerUrl = workerUrl.replace(/\/$/, '');
+    proxySecret = (typeof DISCORD_PROXY_SECRET_CONFIG !== 'undefined' && DISCORD_PROXY_SECRET_CONFIG) || (props.getProperty('DISCORD_PROXY_SECRET') || '');
+  }
 
   try {
-    if (proxyUrl) {
-      return UrlFetchApp.fetch(proxyUrl, buildDiscordProxyParams_(webHookUrl, params, proxySecret));
+    if (workerUrl) {
+      return UrlFetchApp.fetch(workerUrl, buildDiscordProxyParams_(webHookUrl, params, proxySecret));
     }
 
     var directParams = cloneDiscordParams_(params);

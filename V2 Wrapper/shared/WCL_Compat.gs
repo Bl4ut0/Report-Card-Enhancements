@@ -201,10 +201,15 @@ function wclFetchInternal_(url, options, errorPrefix) {
     }
   }
 
-  var proxyUrl =
-    (typeof WCL_PROXY_URL_CONFIG !== 'undefined' && WCL_PROXY_URL_CONFIG) ||
-    wclGetProperty_('WCL_PROXY_URL');
-  var proxySecret = (typeof WCL_PROXY_SECRET_CONFIG !== 'undefined' && WCL_PROXY_SECRET_CONFIG) || wclGetProperty_('WCL_PROXY_SECRET');
+  var proxyEnabledProp = wclGetProperty_('WCL_PROXY_ENABLED');
+  var proxyEnabled = proxyEnabledProp === null || proxyEnabledProp === 'true' || proxyEnabledProp === true || proxyEnabledProp === 'TRUE';
+
+  var proxyUrl = null;
+  var proxySecret = null;
+  if (proxyEnabled) {
+    proxyUrl = (typeof WCL_PROXY_URL_CONFIG !== 'undefined' && WCL_PROXY_URL_CONFIG) || wclGetProperty_('WCL_PROXY_URL');
+    proxySecret = (typeof WCL_PROXY_SECRET_CONFIG !== 'undefined' && WCL_PROXY_SECRET_CONFIG) || wclGetProperty_('WCL_PROXY_SECRET');
+  }
 
   // Determine if this is V2 (GraphQL) or V1 (REST)
   var isV2 = (errorPrefix && errorPrefix.indexOf('V2') > -1) || url.indexOf('/api/v2/') > -1 || url.indexOf('/oauth/') > -1;
