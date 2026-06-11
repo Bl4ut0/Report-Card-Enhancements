@@ -1028,8 +1028,39 @@ function wclTranslateV1UrlToV2GraphQL_(url, auth) {
       if (params.start !== undefined) options.start = Number(params.start);
       if (params.end !== undefined) options.end = Number(params.end);
       if (params.abilityid !== undefined) options.abilityid = Number(params.abilityid);
-      if (params.sourceid !== undefined) options.sourceid = Number(params.sourceid);
-      if (params.targetid !== undefined) options.targetid = Number(params.targetid);
+      
+      // Warcraft Logs V2 GraphQL API swaps target/source semantics for aura events:
+      // - dataType: Buffs/Debuffs expects sourceID for the recipient of the aura, and targetID for the caster.
+      // - Other events expect sourceID for the caster/source, and targetID for the target.
+      var lowerDataType = (dataType || '').toString().toLowerCase();
+      var isAura = (lowerDataType === 'buffs' || lowerDataType === 'debuffs');
+      var isBySource = (params.by !== undefined && params.by.toLowerCase() === 'source');
+      
+      var sourceIDVal = params.sourceid !== undefined ? Number(params.sourceid) : undefined;
+      var targetIDVal = params.targetid !== undefined ? Number(params.targetid) : undefined;
+      
+      if (isAura) {
+        if (isBySource) {
+          if (params.targetid !== undefined) targetIDVal = Number(params.targetid);
+          if (params.sourceid !== undefined) targetIDVal = Number(params.sourceid);
+          sourceIDVal = undefined;
+        } else {
+          if (params.targetid !== undefined) sourceIDVal = Number(params.targetid);
+          if (params.sourceid !== undefined) sourceIDVal = Number(params.sourceid);
+          targetIDVal = undefined;
+        }
+      } else {
+        if (isBySource) {
+          if (params.targetid !== undefined) {
+            sourceIDVal = Number(params.targetid);
+            targetIDVal = undefined;
+          }
+        }
+      }
+      
+      if (sourceIDVal !== undefined) options.sourceid = sourceIDVal;
+      if (targetIDVal !== undefined) options.targetid = targetIDVal;
+      
       if (params.encounter !== undefined) options.encounter = Number(params.encounter);
       if (params.hostility !== undefined) options.hostility = Number(params.hostility);
       if (params.limit !== undefined) options.limit = Number(params.limit);

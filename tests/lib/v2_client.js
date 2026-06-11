@@ -454,19 +454,47 @@ export class V2Client {
       else if (wipesVal === 0) killTypeVal = 'All';
     }
 
+    let sourceIDVal = params.sourceid !== undefined ? Number(params.sourceid) : undefined;
+    let targetIDVal = params.targetid !== undefined ? Number(params.targetid) : undefined;
+
+    const lowerDataType = (dataType || '').toString().toLowerCase();
+    const isAura = (lowerDataType === 'buffs' || lowerDataType === 'debuffs');
+    const isBySource = (params.by !== undefined && params.by.toLowerCase() === 'source');
+
+    if (isAura) {
+      if (isBySource) {
+        if (params.targetid !== undefined) targetIDVal = Number(params.targetid);
+        if (params.sourceid !== undefined) targetIDVal = Number(params.sourceid);
+        sourceIDVal = undefined;
+      } else {
+        if (params.targetid !== undefined) sourceIDVal = Number(params.targetid);
+        if (params.sourceid !== undefined) sourceIDVal = Number(params.sourceid);
+        targetIDVal = undefined;
+      }
+    } else {
+      if (isBySource) {
+        if (params.targetid !== undefined) {
+          sourceIDVal = Number(params.targetid);
+          targetIDVal = undefined;
+        }
+      }
+    }
+
     const variables = {
       code: reportCode,
       startTime: params.start !== undefined ? Number(params.start) : 0,
       endTime: params.end !== undefined ? Number(params.end) : 999999999999,
       dataType: getEventDataType(dataType),
       abilityID: params.abilityid !== undefined ? Number(params.abilityid) : undefined,
-      sourceID: params.sourceid !== undefined ? Number(params.sourceid) : undefined,
-      targetID: params.targetid !== undefined ? Number(params.targetid) : undefined,
+      sourceID: sourceIDVal,
+      targetID: targetIDVal,
       hostilityType: params.hostility !== undefined ? (params.hostility == 1 ? 'Enemies' : 'Friendlies') : undefined,
       limit: params.limit !== undefined ? Number(params.limit) : 10000,
       filterExpression: filterExpression || undefined,
       killType: killTypeVal,
     };
+
+    console.log(`fetchEvents for ${dataType} - params:`, params, 'variables:', variables);
 
     Object.keys(variables).forEach(k => { if (variables[k] === undefined) delete variables[k]; });
 
