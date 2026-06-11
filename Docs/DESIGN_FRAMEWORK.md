@@ -81,7 +81,7 @@ The Cloudflare Worker proxy code is maintained in two locations:
 
 ### Deployment Rules:
 - **No Duplicate Worker Folders:** Do not replicate worker files or folders into `RCE Replacements/` or sub-system directories.
-- **Request Control is Sheet-Side:** No request queuing, sleeping, or delay loops should be added to the Cloudflare Worker code. Per-request pacing and cooldown handling belong in `WCL_Compat.gs`; version-specific grouping of known high-volume calls may remain in replacement files such as `Consumables.gs`.
+- **Request Control is Sheet-Side:** No request queuing, sleeping, or delay loops should be added to the Cloudflare Worker code. Per-request pacing and cooldown handling belong in `WCL_Compat.gs`; version-specific grouping of known high-volume calls may remain in replacement files such as `Consumables.gs` (for CLA consumables) or `RPB.gs` (for player/debuff loops).
 - **Sync Updates:** After modifying `Combined Proxy/`, sync changes to `RCE-Proxy` using the commands in [Combined Proxy/SYNC_GUIDE.md](../Combined%20Proxy/SYNC_GUIDE.md). Pushing to `RCE-Proxy` triggers automatic redeployment for all users who forked it.
 - **Portable Contract:** Sheet code must use the provider-neutral contract in
   [PROXY_CONTRACT.md](PROXY_CONTRACT.md). Provider-specific APIs and runtime
