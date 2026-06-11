@@ -1082,6 +1082,95 @@ function wclTranslateV1UrlToV2GraphQL_(url, auth) {
   throw new Error('[WCL Wrapper] Unsupported V1 REST URL path for V2 mapping: ' + parsed.path);
 }
 
+function wclBatchFetchV1Urls_(rawCredentials, reportCode, urls) {
+  var auth = wclGetCredentialMode_(rawCredentials);
+  if (!urls || urls.length === 0) return [];
+  
+  if (auth.mode !== 'v2') {
+    var results = [];
+    for (var i = 0; i < urls.length; i++) {
+      results.push(wclV1Fetch_(urls[i], { method: 'GET' }));
+    }
+    return results;
+  }
+  
+  var requests = [];
+  for (var i = 0; i < urls.length; i++) {
+    var parsed = wclParseV1Url_(urls[i]);
+    if (!parsed) {
+      throw new Error('[WCL Wrapper] Could not parse V1 URL for batch: ' + urls[i]);
+    }
+    var parts = parsed.parts;
+    var params = parsed.params;
+    
+    var dataType = parts[2];
+    var options = {};
+    if (params.start !== undefined) options.start = Number(params.start);
+    if (params.end !== undefined) options.end = Number(params.end);
+    if (params.abilityid !== undefined) options.abilityid = Number(params.abilityid);
+    
+    var lowerDataType = (dataType || '').toString().toLowerCase();
+    var isAura = (lowerDataType === 'buffs' || lowerDataType === 'debuffs');
+    var isBySource = (params.by !== undefined && params.by.toLowerCase() === 'source');
+    
+    var sourceIDVal = params.sourceid !== undefined ? Number(params.sourceid) : undefined;
+    var targetIDVal = params.targetid !== undefined ? Number(params.targetid) : undefined;
+    
+    if (isAura) {
+      if (isBySource) {
+        if (params.targetid !== undefined) targetIDVal = Number(params.targetid);
+        if (params.sourceid !== undefined) targetIDVal = Number(params.sourceid);
+        sourceIDVal = undefined;
+      } else {
+        if (params.targetid !== undefined) sourceIDVal = Number(params.targetid);
+        if (params.sourceid !== undefined) sourceIDVal = Number(params.sourceid);
+        targetIDVal = undefined;
+      }
+    } else {
+      if (isBySource) {
+        if (params.targetid !== undefined) {
+          sourceIDVal = Number(params.targetid);
+          targetIDVal = undefined;
+        }
+      }
+    }
+    
+    if (sourceIDVal !== undefined) options.sourceid = sourceIDVal;
+    if (targetIDVal !== undefined) options.targetid = targetIDVal;
+    
+    if (params.encounter !== undefined) options.encounter = Number(params.encounter);
+    if (params.hostility !== undefined) options.hostility = Number(params.hostility);
+    if (params.limit !== undefined) options.limit = Number(params.limit);
+    if (params.nextpagetimestamp !== undefined) options.nextPageTimestamp = Number(params.nextpagetimestamp);
+    
+    if (params.by !== undefined) {
+      var byVal = params.by.toLowerCase();
+      if (byVal === 'target') options.viewBy = 'Target';
+      else if (byVal === 'source') options.viewBy = 'Source';
+      else if (byVal === 'ability') options.viewBy = 'Ability';
+    }
+    if (params.options !== undefined) {
+      options.viewOptions = Number(params.options);
+    }
+    if (params.wipes !== undefined && params.encounter !== undefined && Number(params.encounter) !== 0) {
+      var wipesVal = Number(params.wipes);
+      if (wipesVal === 1) options.killType = 'Wipes';
+      else if (wipesVal === 2) options.killType = 'Kills';
+      else if (wipesVal === 0) options.killType = 'All';
+    }
+    
+    var filter = wclBuildFilterExpression_(params);
+    if (filter !== undefined) options.filterExpression = filter;
+    
+    requests.push({
+      dataType: dataType,
+      options: options
+    });
+  }
+  
+  return wclFetchTables_(rawCredentials, reportCode, requests);
+}
+
 
 /**
  * Shared_DiscordWebhook.gs

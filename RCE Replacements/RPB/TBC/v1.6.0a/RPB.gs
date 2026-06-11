@@ -796,6 +796,36 @@ function generateAllSheet() {
     var debuffsTakenTop = wclV1Fetch_(urlDebuffsTop);
     var debuffsTopByTotalDesc = [];
     var debuffsTopByTotalDescOriginal = [];
+
+    // Pre-collect spellIds to fetch
+    var spellIdsToFetch = [];
+    debuffsToTrack.forEach(function (ability) {
+      if (ability.indexOf("[") > -1) {
+        ability.split("[")[1].split("]")[0].split(",").forEach(function (spellId) {
+          debuffsTakenTop.auras.forEach(function (abilityFromLogs) {
+            if (abilityFromLogs.guid != null && abilityFromLogs.guid.toString().length > 0 && spellId == abilityFromLogs.guid.toString()) {
+              if (spellIdsToFetch.indexOf(spellId) === -1) {
+                spellIdsToFetch.push(spellId);
+              }
+            }
+          });
+        });
+      }
+    });
+
+    // Batch fetch debuff detail tables
+    var debuffUrls = [];
+    spellIdsToFetch.forEach(function (spellId) {
+      debuffUrls.push(urlDebuffInfo + spellId);
+    });
+    var debuffInfoResults = wclBatchFetchV1Urls_(api_key, logId, debuffUrls);
+
+    // Create a map from spellId to fetched data
+    var debuffInfoMap = {};
+    spellIdsToFetch.forEach(function (spellId, index) {
+      debuffInfoMap[spellId] = debuffInfoResults[index];
+    });
+
     debuffsToTrack.forEach(function (ability, abilityCount) {
       var total = 0;
       var name = "";
@@ -808,8 +838,8 @@ function generateAllSheet() {
               total += abilityFromLogs.totalUses;
               name = debuffsToTrackLang[abilityCount];
               nameOriginal = debuffsToTrack[abilityCount];
-              var debuffInfoData = wclV1Fetch_(urlDebuffInfo + spellId);
-              if (debuffInfoData.auras != null && debuffInfoData.auras.length > 0) {
+              var debuffInfoData = debuffInfoMap[spellId];
+              if (debuffInfoData != null && debuffInfoData.auras != null && debuffInfoData.auras.length > 0) {
                 debuffInfoData.auras.forEach(function (abilitySource, abilitySourceCount) {
                   sourcesString += abilitySource.name + "/";
                 })
@@ -860,16 +890,30 @@ function generateAllSheet() {
     }
     shiftRangeByRows(sheet, addRowsToRange(sheet, addColumnsToRange(sheet, debuffs, 1 - debuffs.getNumColumns()).setValues(debuffsDoneArr), -1), 1).setFontSize(8).setHorizontalAlignment("right");
 
-    bossSummaryDataAll = [];
-    bossDamageDataAll = [];
+    var bossUrls = [];
+    var bossTargets = [];
     allFightsData.fights.forEach(function (fight, fightCount) {
       if ((fight.start_time != fight.end_time) && fight.boss > 0 && ((onlyFightNr != null && onlyFightNr.toString() == fight.id.toString()) || onlyFightNr.toString().length == 0)) {
-        bossSummaryDataAll.push(wclV1Fetch_(urlSummary.replace(startEndString, "&start=" + fight.start_time + "&end=" + fight.end_time).replace("&encounter=0", "")));
-        bossDamageDataAll.push(wclV1Fetch_(urlDamageDone.replace("&sourceid=", "").replace(startEndString, "&start=" + fight.start_time + "&end=" + fight.end_time) + "&abilityid=27187"));
-        if (fightCount % 10 == 0)
-          Utilities.sleep(500);
+        var summaryUrl = urlSummary.replace(startEndString, "&start=" + fight.start_time + "&end=" + fight.end_time).replace("&encounter=0", "");
+        var damageUrl = urlDamageDone.replace("&sourceid=", "").replace(startEndString, "&start=" + fight.start_time + "&end=" + fight.end_time) + "&abilityid=27187";
+        bossUrls.push(summaryUrl);
+        bossTargets.push("summary");
+        bossUrls.push(damageUrl);
+        bossTargets.push("damage");
       }
-    })
+    });
+
+    var bossResults = wclBatchFetchV1Urls_(api_key, logId, bossUrls);
+    bossSummaryDataAll = [];
+    bossDamageDataAll = [];
+    bossTargets.forEach(function (target, targetIndex) {
+      var result = bossResults[targetIndex];
+      if (target === "summary") {
+        bossSummaryDataAll.push(result);
+      } else {
+        bossDamageDataAll.push(result);
+      }
+    });
 
     var spellHasteInfoIdsRaw = confSpellHasteConfig.getRange(1, 1, 1500, 1).getValues();
     var spellHasteInfoIds = spellHasteInfoIdsRaw.reduce(function (ar, e) {
@@ -928,33 +972,109 @@ function generateAllSheet() {
 
           classDoneCount++;
         }
-        Utilities.sleep(150);
-        //load player-related queries into datastructures
-        var playerData = wclV1Fetch_(urlPlayers + playerByNameAsc.id);
-        var playerDataTrash = wclV1Fetch_(urlPlayersOnTrash + playerByNameAsc.id);
-        var damageDoneData = wclV1Fetch_(urlDamageDone + playerByNameAsc.id);
-        var buffsDataTrash = wclV1Fetch_(urlBuffsOnTrash + playerByNameAsc.id);
-        var buffsData = wclV1Fetch_(urlBuffsTotal + playerByNameAsc.id);
-        var damageTakenTotalData = wclV1Fetch_(urlDamageTakenTotal + playerByNameAsc.id);
-        var debuffsAppliedData = wclV1Fetch_(urlDebuffsApplied + playerByNameAsc.id);
-        var debuffsAppliedDataBosses = wclV1Fetch_(urlDebuffsAppliedBosses + playerByNameAsc.id);
-        if (playerByNameAsc.type == "Paladin")
-          var debuffsAppliedDataBossesJudgement = wclV1Fetch_(urlDebuffsAppliedBossesJudgement + playerByNameAsc.id);
-        var debuffsData = wclV1Fetch_(urlDebuffs + playerByNameAsc.id);
-        var healingData = wclV1Fetch_(urlHealing + playerByNameAsc.id);
-        var healingDataTarget = wclV1Fetch_(urlHealingTarget + playerByNameAsc.id + "&by=ability");
-        if (playerByNameAsc.type == "Priest") {
-          var VTManaGainData = wclV1Fetch_(urlVTManaGain + playerByNameAsc.id);
-          var shadowDamageDoneData = wclV1Fetch_(urlShadowDamageDone + playerByNameAsc.id);
-        } else if (playerByNameAsc.type == "Paladin" && !onlyTrash) {
-          var TwistsDoneOnBosses = wclV1Fetch_(urlTwistsDoneOnBosses + playerByNameAsc.id);
-          var WindfuryAttacksOnTwistsDoneOnBosses = wclV1Fetch_(urlWindfuryAttacksOnTwistsDoneOnBosses + playerByNameAsc.id);
-          var WindfuryAttacksOnTwistsDoneOnBossesRank1 = wclV1Fetch_(urlWindfuryAttacksOnTwistsDoneOnBosses.replace("25584", "8516") + playerByNameAsc.id);
-          var WindfuryAttacksOnBosses = wclV1Fetch_(urlWindfuryAttacksOnBosses + playerByNameAsc.id);
-          var WindfuryAttacksOnBossesRank1 = wclV1Fetch_(urlWindfuryAttacksOnBosses.replace("25584", "8516") + playerByNameAsc.id);
-          var DamageDoneOnBosses = wclV1Fetch_(urlDamageDoneOnBosses + playerByNameAsc.id);
-          Utilities.sleep(250);
+        var urlFriendlyFire = baseUrl + "report/tables/damage-taken/" + logId + apiKeyString + startEndStringNoFilter + "&filter=NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2229546%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2229546%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2245717%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2245717%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2237122%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2237122%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2237135%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2237135%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2241345%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2241345%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2243361%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2243361%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20encounterid%20%21%3D%20724%20AND%20ability.id%20%21%3D%2046768%20&options=4135&by=target&targetid=";
+        var urlFriendlyFireReplaced = replaceAll(urlFriendlyFire, "Qlap", playerByNameAsc.name) + playerByNameAsc.id;
+
+        var playerUrls = [];
+        var playerTargets = [];
+
+        playerUrls.push(urlPlayers + playerByNameAsc.id);
+        playerTargets.push("playerData");
+
+        playerUrls.push(urlPlayersOnTrash + playerByNameAsc.id);
+        playerTargets.push("playerDataTrash");
+
+        playerUrls.push(urlDamageDone + playerByNameAsc.id);
+        playerTargets.push("damageDoneData");
+
+        playerUrls.push(urlBuffsOnTrash + playerByNameAsc.id);
+        playerTargets.push("buffsDataTrash");
+
+        playerUrls.push(urlBuffsTotal + playerByNameAsc.id);
+        playerTargets.push("buffsData");
+
+        playerUrls.push(urlDamageTakenTotal + playerByNameAsc.id);
+        playerTargets.push("damageTakenTotalData");
+
+        playerUrls.push(urlDebuffsApplied + playerByNameAsc.id);
+        playerTargets.push("debuffsAppliedData");
+
+        playerUrls.push(urlDebuffsAppliedBosses + playerByNameAsc.id);
+        playerTargets.push("debuffsAppliedDataBosses");
+
+        if (playerByNameAsc.type == "Paladin") {
+          playerUrls.push(urlDebuffsAppliedBossesJudgement + playerByNameAsc.id);
+          playerTargets.push("debuffsAppliedDataBossesJudgement");
         }
+
+        playerUrls.push(urlDebuffs + playerByNameAsc.id);
+        playerTargets.push("debuffsData");
+
+        playerUrls.push(urlHealing + playerByNameAsc.id);
+        playerTargets.push("healingData");
+
+        playerUrls.push(urlHealingTarget + playerByNameAsc.id + "&by=ability");
+        playerTargets.push("healingDataTarget");
+
+        playerUrls.push(urlFriendlyFireReplaced);
+        playerTargets.push("friendlyFireData");
+
+        if (playerByNameAsc.type == "Priest") {
+          playerUrls.push(urlVTManaGain + playerByNameAsc.id);
+          playerTargets.push("VTManaGainData");
+
+          playerUrls.push(urlShadowDamageDone + playerByNameAsc.id);
+          playerTargets.push("shadowDamageDoneData");
+        } else if (playerByNameAsc.type == "Paladin" && !onlyTrash) {
+          playerUrls.push(urlTwistsDoneOnBosses + playerByNameAsc.id);
+          playerTargets.push("TwistsDoneOnBosses");
+
+          playerUrls.push(urlWindfuryAttacksOnTwistsDoneOnBosses + playerByNameAsc.id);
+          playerTargets.push("WindfuryAttacksOnTwistsDoneOnBosses");
+
+          playerUrls.push(urlWindfuryAttacksOnTwistsDoneOnBosses.replace("25584", "8516") + playerByNameAsc.id);
+          playerTargets.push("WindfuryAttacksOnTwistsDoneOnBossesRank1");
+
+          playerUrls.push(urlWindfuryAttacksOnBosses + playerByNameAsc.id);
+          playerTargets.push("WindfuryAttacksOnBosses");
+
+          playerUrls.push(urlWindfuryAttacksOnBosses.replace("25584", "8516") + playerByNameAsc.id);
+          playerTargets.push("WindfuryAttacksOnBossesRank1");
+
+          playerUrls.push(urlDamageDoneOnBosses + playerByNameAsc.id);
+          playerTargets.push("DamageDoneOnBosses");
+        }
+
+        var playerResults = wclBatchFetchV1Urls_(api_key, logId, playerUrls);
+
+        var playerData, playerDataTrash, damageDoneData, buffsDataTrash, buffsData, damageTakenTotalData, debuffsAppliedData, debuffsAppliedDataBosses;
+        var debuffsAppliedDataBossesJudgement, debuffsData, healingData, healingDataTarget, friendlyFireData;
+        var VTManaGainData, shadowDamageDoneData, TwistsDoneOnBosses, WindfuryAttacksOnTwistsDoneOnBosses, WindfuryAttacksOnTwistsDoneOnBossesRank1, WindfuryAttacksOnBosses, WindfuryAttacksOnBossesRank1, DamageDoneOnBosses;
+
+        playerTargets.forEach(function (target, idx) {
+          var res = playerResults[idx];
+          if (target === "playerData") playerData = res;
+          else if (target === "playerDataTrash") playerDataTrash = res;
+          else if (target === "damageDoneData") damageDoneData = res;
+          else if (target === "buffsDataTrash") buffsDataTrash = res;
+          else if (target === "buffsData") buffsData = res;
+          else if (target === "damageTakenTotalData") damageTakenTotalData = res;
+          else if (target === "debuffsAppliedData") debuffsAppliedData = res;
+          else if (target === "debuffsAppliedDataBosses") debuffsAppliedDataBosses = res;
+          else if (target === "debuffsAppliedDataBossesJudgement") debuffsAppliedDataBossesJudgement = res;
+          else if (target === "debuffsData") debuffsData = res;
+          else if (target === "healingData") healingData = res;
+          else if (target === "healingDataTarget") healingDataTarget = res;
+          else if (target === "friendlyFireData") friendlyFireData = res;
+          else if (target === "VTManaGainData") VTManaGainData = res;
+          else if (target === "shadowDamageDoneData") shadowDamageDoneData = res;
+          else if (target === "TwistsDoneOnBosses") TwistsDoneOnBosses = res;
+          else if (target === "WindfuryAttacksOnTwistsDoneOnBosses") WindfuryAttacksOnTwistsDoneOnBosses = res;
+          else if (target === "WindfuryAttacksOnTwistsDoneOnBossesRank1") WindfuryAttacksOnTwistsDoneOnBossesRank1 = res;
+          else if (target === "WindfuryAttacksOnBosses") WindfuryAttacksOnBosses = res;
+          else if (target === "WindfuryAttacksOnBossesRank1") WindfuryAttacksOnBossesRank1 = res;
+          else if (target === "DamageDoneOnBosses") DamageDoneOnBosses = res;
+        });
 
         var hostilePlayersTotal = 0;
         hostilePlayersData.entries.forEach(function (hostilePlayersDataEntry, hostilePlayersDataEntryCount) {
@@ -963,9 +1083,6 @@ function generateAllSheet() {
         })
 
         var friendlyFireTotal = 0;
-        var urlFriendlyFire = baseUrl + "report/tables/damage-taken/" + logId + apiKeyString + startEndStringNoFilter + "&filter=NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2229546%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2229546%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2245717%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2245717%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2237122%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2237122%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2237135%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2237135%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2241345%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2241345%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20NOT%20IN%20RANGE%20FROM%20type%20%3D%20%22applydebuff%22%20AND%20ability.id%20%3D%20%2243361%22%20AND%20target.name%3D%22Qlap%22%20TO%20type%20%3D%20%22removedebuff%22%20and%20ability.id%3D%2243361%22%20AND%20target.name%3D%22Qlap%22%20END%20AND%20encounterid%20%21%3D%20724%20AND%20ability.id%20%21%3D%2046768%20&options=4135&by=target&targetid=";
-        var urlFriendlyFireReplaced = replaceAll(urlFriendlyFire, "Qlap", playerByNameAsc.name) + playerByNameAsc.id;
-        var friendlyFireData = wclV1Fetch_(urlFriendlyFireReplaced);
         if (friendlyFireData != null && friendlyFireData.entries != null && friendlyFireData.entries.length > 0 && friendlyFireData.entries[0].total != null && friendlyFireData.entries[0].total > 0) {
           friendlyFireTotal = friendlyFireData.entries[0].total;
         }
