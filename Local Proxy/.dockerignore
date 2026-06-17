@@ -1,0 +1,6 @@
+docker-compose.yml
+.env
+.env.example
+README.md
+node_modules
+npm-debug.log
