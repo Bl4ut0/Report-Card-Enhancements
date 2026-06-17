@@ -133,18 +133,61 @@ Any provider can be used when it implements the
 
 ## 4. Dedicated-IP VPS Deployment
 
-For sustained automation or when Warcraft Logs rejects shared Cloudflare Worker
-egress, deploy the package in [VPS Proxy/](../VPS%20Proxy/). It runs the same
-`/wcl` and `/discord` contracts behind automatic Caddy HTTPS, so the existing
-Apps Script properties can point to it without wrapper changes.
-
-The VPS service adds process-wide queues that a distributed Worker cannot
-guarantee:
+For sustained automation on a public VPS, deploy the package in [VPS Proxy/](../VPS%20Proxy/). It runs the same `/wcl` and `/discord` contracts behind automatic Caddy HTTPS (which handles TLS certificate generation and renewal).
 
 - V1 REST defaults to one active upstream request with 300 ms launch spacing.
 - V2 GraphQL defaults to four active upstream requests.
+- The Compose deployment runs Caddy and the proxy application as a single stack.
 - All limits are configurable through `VPS Proxy/.env`.
-- The Compose deployment intentionally runs one application replica so every
-  request shares the same queue and VPS egress IP.
 
 See [VPS Proxy/README.md](../VPS%20Proxy/README.md) for deployment instructions.
+
+---
+
+## 5. Local Docker + Cloudflare Worker Relay Deployment (Home Server)
+
+For users who want to run the proxy on their home network (e.g. on a NAS or local server) using their dedicated home IP address but do not want to expose their home external IP to the public internet:
+
+```mermaid
+graph TD
+    subgraph Google Sheets / Apps Script
+        GAS[Google Apps Script]
+        Wrapper[wrapper.gs Facade]
+    end
+
+    subgraph Cloudflare Worker (Public Entry Point)
+        CF[Combined Proxy Worker Relay]
+    end
+
+    subgraph Home / Local Server (Docker)
+        NPM[Nginx Proxy Manager Plus / NPMPlus]
+        LocalProxy[Local Proxy Container]
+    end
+
+    subgraph External APIs
+        WclAPI[Warcraft Logs API V1/V2]
+        DiscordAPI[Discord Webhook API]
+    end
+
+    GAS -->|POST to Workers URL| CF
+    CF -->|Forward Relay via BACKEND_URL| NPM
+    NPM -->|Route to Port 3000| LocalProxy
+    LocalProxy -->|Fetch (Home Residential IP)| WclAPI
+    LocalProxy -->|Fetch| DiscordAPI
+```
+
+### Setup Instructions
+
+1. **Deploy Local Container**: Set up the container in [Local Proxy/](../Local%20Proxy/) on your home server:
+   ```bash
+   cp .env.example .env
+   # Set WCL_PROXY_SECRET and DISCORD_PROXY_SECRET
+   docker compose up -d
+   ```
+2. **Reverse Proxy (NPMPlus)**: Point your local reverse proxy (like Nginx Proxy Manager Plus) to your home server IP on port `3000`. Set up SSL and proxy the subdomain through Cloudflare (Orange Cloud enabled) to hide your home IP.
+3. **Configure Worker Relay**: In your Cloudflare Worker environment variables, add `BACKEND_URL` and set its value to your NPMPlus subdomain (e.g., `https://wclproxy.yourdomain.com`).
+4. **Google Sheets Config**: Enter your Cloudflare Worker URL as the proxy target in your Google Sheet properties. 
+
+Requests will now route securely through the Worker and your local reverse proxy to your home container, performing WCL fetches from your unshared home IP.
+
+See [Local Proxy/README.md](../Local%20Proxy/README.md) for detailed instructions.
