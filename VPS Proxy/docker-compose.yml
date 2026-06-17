@@ -38,10 +38,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    logging:
-      options:
-        max-size: 10m
-        max-file: "3"
     networks:
       - proxy-net
 
@@ -63,10 +59,6 @@ services:
         condition: service_healthy
     security_opt:
       - no-new-privileges:true
-    logging:
-      options:
-        max-size: 10m
-        max-file: "3"
     networks:
       - proxy-net
 

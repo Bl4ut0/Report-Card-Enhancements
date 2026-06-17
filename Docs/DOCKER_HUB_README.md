@@ -75,10 +75,6 @@ This option runs on a Linux VPS with a public IP. It includes a **Caddy** sideca
          - no-new-privileges:true
        cap_drop:
          - ALL
-       logging:
-         options:
-           max-size: 10m
-           max-file: "3"
        networks:
          - proxy-net
 
@@ -100,10 +96,6 @@ This option runs on a Linux VPS with a public IP. It includes a **Caddy** sideca
            condition: service_healthy
        security_opt:
          - no-new-privileges:true
-       logging:
-         options:
-           max-size: 10m
-           max-file: "3"
        networks:
          - proxy-net
 
@@ -187,10 +179,6 @@ This option runs locally on your home server or NAS behind your own reverse prox
          - no-new-privileges:true
        cap_drop:
          - ALL
-       logging:
-         options:
-           max-size: 10m
-           max-file: "3"
    ```
 3. Create a **`.env`** file to configure your secrets:
    ```bash
