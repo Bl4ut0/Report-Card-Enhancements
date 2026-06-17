@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     init: true
     environment:
-      PORT: "3000"
+      PORT: "4040"
       PROXY_RUNTIME: "local-proxy"
       WCL_PROXY_SECRET: ${WCL_PROXY_SECRET:?Set WCL_PROXY_SECRET in .env}
       DISCORD_PROXY_SECRET: ${DISCORD_PROXY_SECRET:?Set DISCORD_PROXY_SECRET in .env}
@@ -20,13 +20,13 @@ services:
       DISCORD_QUEUE_INTERVAL_MS: ${DISCORD_QUEUE_INTERVAL_MS:-500}
       DISCORD_REQUEST_TIMEOUT_MS: ${DISCORD_REQUEST_TIMEOUT_MS:-30000}
     ports:
-      - "3000:3000"
+      - "4040:4040"
     healthcheck:
       test:
         - CMD
         - node
         - -e
-        - fetch('http://127.0.0.1:3000/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+        - fetch('http://127.0.0.1:4040/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
       interval: 30s
       timeout: 5s
       retries: 3

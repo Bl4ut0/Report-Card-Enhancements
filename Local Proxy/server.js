@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const crypto = require('crypto');
 
 const app = express();
-const PORT = parseIntegerEnv('PORT', 3000, 1);
+const PORT = parseIntegerEnv('PORT', 4040, 1);
 
 // Middleware
 app.use(bodyParser.json({ limit: '10mb' }));

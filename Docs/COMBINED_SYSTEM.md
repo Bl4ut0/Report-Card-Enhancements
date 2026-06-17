@@ -171,7 +171,7 @@ graph TD
 
     GAS -->|POST to Workers URL| CF
     CF -->|Forward Relay via BACKEND_URL| NPM
-    NPM -->|Route to Port 3000| LocalProxy
+    NPM -->|Route to Port 4040| LocalProxy
     LocalProxy -->|Fetch (Home Residential IP)| WclAPI
     LocalProxy -->|Fetch| DiscordAPI
 ```
@@ -184,7 +184,7 @@ graph TD
    # Set WCL_PROXY_SECRET and DISCORD_PROXY_SECRET
    docker compose up -d
    ```
-2. **Reverse Proxy (NPMPlus)**: Point your local reverse proxy (like Nginx Proxy Manager Plus) to your home server IP on port `3000`. Set up SSL and proxy the subdomain through Cloudflare (Orange Cloud enabled) to hide your home IP.
+2. **Reverse Proxy (NPMPlus)**: Point your local reverse proxy (like Nginx Proxy Manager Plus) to your home server IP on port `4040`. Set up SSL and proxy the subdomain through Cloudflare (Orange Cloud enabled) to hide your home IP.
 3. **Configure Worker Relay**: In your Cloudflare Worker environment variables, add `BACKEND_URL` and set its value to your NPMPlus subdomain (e.g., `https://wclproxy.yourdomain.com`).
 4. **Google Sheets Config**: Enter your Cloudflare Worker URL as the proxy target in your Google Sheet properties. 
 

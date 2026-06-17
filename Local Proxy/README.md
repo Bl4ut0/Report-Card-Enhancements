@@ -29,7 +29,7 @@ Launch the container in detached mode:
 ```bash
 docker compose up -d
 ```
-The server will pull the pre-built image from Docker Hub and expose the proxy app on port **`3000`** of your docker host.
+The server will pull the pre-built image from Docker Hub and expose the proxy app on port **`4040`** of your docker host.
 
 ---
 
@@ -42,7 +42,7 @@ To route external traffic securely to your container:
    * **Domain Names**: `wclproxy.yourdomain.com` (pointing to your home server's domain/subdomain).
    * **Scheme**: `http`
    * **Forward Hostname / IP**: The IP address of your Docker host (e.g., `192.168.1.100` or `172.17.0.1`).
-   * **Forward Port**: `3000`
+   * **Forward Port**: `4040`
    * **Block Common Exploits**: Enabled.
 3. Under the **SSL** tab:
    * Select or request a valid Let's Encrypt SSL certificate.
@@ -80,7 +80,7 @@ To configure your existing Cloudflare Worker (`falling-forest-3c7a`) to act as a
 ### Test the Local Proxy Health
 From your local server, test the container's health endpoint:
 ```bash
-curl http://localhost:3000/healthz
+curl http://localhost:4040/healthz
 ```
 It should respond with a `200 OK` JSON detailing active queues and cache status:
 ```json

@@ -14,13 +14,13 @@ For a quick setup without a reverse proxy, you can run the container directly us
 docker run -d \
   --name rce-proxy \
   --restart unless-stopped \
-  -p 3000:3000 \
+  -p 4040:4040 \
   -e WCL_PROXY_SECRET="your_long_wcl_secret_here" \
   -e DISCORD_PROXY_SECRET="your_long_discord_secret_here" \
   bl4ut0/rce-proxy:latest
 ```
 
-The health check will be available locally at `http://localhost:3000/healthz`.
+The health check will be available locally at `http://localhost:4040/healthz`.
 
 ---
 
@@ -41,7 +41,7 @@ This option runs on a Linux VPS with a public IP. It includes a **Caddy** sideca
        restart: unless-stopped
        init: true
        environment:
-         PORT: "3000"
+         PORT: "4040"
          PROXY_RUNTIME: "vps"
          WCL_PROXY_SECRET: ${WCL_PROXY_SECRET:?Set WCL_PROXY_SECRET in .env}
          DISCORD_PROXY_SECRET: ${DISCORD_PROXY_SECRET:?Set DISCORD_PROXY_SECRET in .env}
@@ -57,13 +57,13 @@ This option runs on a Linux VPS with a public IP. It includes a **Caddy** sideca
          DISCORD_QUEUE_INTERVAL_MS: ${DISCORD_QUEUE_INTERVAL_MS:-500}
          DISCORD_REQUEST_TIMEOUT_MS: ${DISCORD_REQUEST_TIMEOUT_MS:-30000}
        expose:
-         - "3000"
+         - "4040"
        healthcheck:
          test:
            - CMD
            - node
            - -e
-           - fetch('http://127.0.0.1:3000/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+           - fetch('http://127.0.0.1:4040/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
          interval: 30s
          timeout: 5s
          retries: 3
@@ -119,7 +119,7 @@ This option runs on a Linux VPS with a public IP. It includes a **Caddy** sideca
    ```caddy
    {$DOMAIN} {
        encode zstd gzip
-       reverse_proxy app:3000
+       reverse_proxy app:4040
 
        log {
            output stdout
@@ -153,7 +153,7 @@ This option runs locally on your home server or NAS behind your own reverse prox
        restart: unless-stopped
        init: true
        environment:
-         PORT: "3000"
+         PORT: "4040"
          PROXY_RUNTIME: "local-proxy"
          WCL_PROXY_SECRET: ${WCL_PROXY_SECRET:?Set WCL_PROXY_SECRET in .env}
          DISCORD_PROXY_SECRET: ${DISCORD_PROXY_SECRET:?Set DISCORD_PROXY_SECRET in .env}
@@ -169,13 +169,13 @@ This option runs locally on your home server or NAS behind your own reverse prox
          DISCORD_QUEUE_INTERVAL_MS: ${DISCORD_QUEUE_INTERVAL_MS:-500}
          DISCORD_REQUEST_TIMEOUT_MS: ${DISCORD_REQUEST_TIMEOUT_MS:-30000}
        ports:
-         - "3000:3000"
+         - "4040:4040"
        healthcheck:
          test:
            - CMD
            - node
            - -e
-           - fetch('http://127.0.0.1:3000/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+           - fetch('http://127.0.0.1:4040/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
          interval: 30s
          timeout: 5s
          retries: 3
@@ -201,7 +201,7 @@ This option runs locally on your home server or NAS behind your own reverse prox
    ```bash
    docker compose up -d
    ```
-5. **NPMPlus Configuration**: Point a subdomain (e.g., `wclproxy.yourdomain.com`) to your Docker host IP on port `3000` with **Force SSL** and HTTP/2. Keep it proxied (**Orange Cloud enabled**) in your Cloudflare DNS dashboard to hide your home IP.
+5. **NPMPlus Configuration**: Point a subdomain (e.g., `wclproxy.yourdomain.com`) to your Docker host IP on port `4040` with **Force SSL** and HTTP/2. Keep it proxied (**Orange Cloud enabled**) in your Cloudflare DNS dashboard to hide your home IP.
 6. **Configure Worker Relay**: In your Cloudflare Worker environment variables, add `BACKEND_URL` and set its value to your NPMPlus domain: `https://wclproxy.yourdomain.com`.
 
 ---
@@ -212,7 +212,7 @@ The following variables can be adjusted in your `.env` configuration file:
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `3000` | The port the Node.js server listens on inside the container. |
+| `PORT` | `4040` | The port the Node.js server listens on inside the container. |
 | `NODE_ENV` | `production` | The execution environment. |
 | `WCL_PROXY_SECRET` | *(Required)* | Secret key required in request headers to authorize access to `/wcl`. |
 | `DISCORD_PROXY_SECRET` | *(Required)* | Secret key required in request headers to authorize access to `/discord`. |
@@ -245,7 +245,7 @@ Add the following parameters to your Google Sheet **Script Properties**:
 
 Test the container's health by making a request to the `/healthz` endpoint:
 ```bash
-curl http://localhost:3000/healthz
+curl http://localhost:4040/healthz
 ```
 It should return a `200 OK` JSON detailing active queues and caching statistics:
 ```json
