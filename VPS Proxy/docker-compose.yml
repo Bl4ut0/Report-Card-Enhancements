@@ -1,10 +1,11 @@
 services:
   app:
-    build: .
+    image: bl4ut0/rce-proxy:latest
     restart: unless-stopped
     init: true
     environment:
       PORT: "3000"
+      PROXY_RUNTIME: "vps"
       WCL_PROXY_SECRET: ${WCL_PROXY_SECRET:?Set WCL_PROXY_SECRET in .env}
       DISCORD_PROXY_SECRET: ${DISCORD_PROXY_SECRET:?Set DISCORD_PROXY_SECRET in .env}
       WCL_PROXY_MAX_RETRIES: ${WCL_PROXY_MAX_RETRIES:-2}

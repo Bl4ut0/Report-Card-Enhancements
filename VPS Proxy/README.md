@@ -33,8 +33,7 @@ chmod +x deploy.sh
 ./deploy.sh
 ```
 
-The script validates the Compose configuration, builds the Node.js image, and
-starts the proxy and Caddy. Caddy obtains and renews the TLS certificate
+The script validates the Compose configuration, pulls the pre-built Node.js image from Docker Hub, and starts the proxy and Caddy. Caddy obtains and renews the TLS certificate
 automatically after DNS and firewall configuration are correct.
 
 Check the deployment:

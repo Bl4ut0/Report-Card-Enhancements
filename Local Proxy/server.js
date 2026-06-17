@@ -198,7 +198,7 @@ app.post('/discord', async (req, res) => {
  */
 app.post('/wcl', async (req, res) => {
   res.set('x-wcl-proxy-relayed', 'true');
-  res.set('x-wcl-proxy-runtime', 'local-proxy');
+  res.set('x-wcl-proxy-runtime', process.env.PROXY_RUNTIME || 'local-proxy');
   
   const receivedSecret = req.headers['x-wcl-proxy-secret'] || '';
   if (WCL_PROXY_SECRET && receivedSecret !== WCL_PROXY_SECRET) {

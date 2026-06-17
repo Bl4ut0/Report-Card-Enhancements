@@ -5,6 +5,7 @@ services:
     init: true
     environment:
       PORT: "3000"
+      PROXY_RUNTIME: "local-proxy"
       WCL_PROXY_SECRET: ${WCL_PROXY_SECRET:?Set WCL_PROXY_SECRET in .env}
       DISCORD_PROXY_SECRET: ${DISCORD_PROXY_SECRET:?Set DISCORD_PROXY_SECRET in .env}
       WCL_PROXY_MAX_RETRIES: ${WCL_PROXY_MAX_RETRIES:-2}
