@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: bl4ut0/rce-proxy:latest
     restart: unless-stopped
     init: true
     environment:

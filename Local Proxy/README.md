@@ -29,7 +29,7 @@ Launch the container in detached mode:
 ```bash
 docker compose up -d
 ```
-The server will build the lightweight Node 22 Alpine image and expose the proxy app on port **`3000`** of your docker host.
+The server will pull the pre-built image from Docker Hub and expose the proxy app on port **`3000`** of your docker host.
 
 ---
 
