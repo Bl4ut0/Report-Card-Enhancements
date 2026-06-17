@@ -6,51 +6,207 @@ Both the public VPS track and the home-hosted local proxy track run using this s
 
 ---
 
-## Deployment Options
+## ⚡ Quick CLI Start (Single-Command Deploy)
 
-Choose the deployment model that best fits your environment:
+For a quick setup without a reverse proxy, you can run the container directly using `docker run`:
+
+```bash
+docker run -d \
+  --name rce-proxy \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e WCL_PROXY_SECRET="your_long_wcl_secret_here" \
+  -e DISCORD_PROXY_SECRET="your_long_discord_secret_here" \
+  bl4ut0/rce-proxy:latest
+```
+
+The health check will be available locally at `http://localhost:3000/healthz`.
+
+---
+
+## 📦 Deployment Options
+
+Select the deployment model that best fits your environment:
 
 ### Option A: Public VPS Deployment (with Caddy & SSL)
 
 This option runs on a Linux VPS with a public IP. It includes a **Caddy** sidecar container that automatically obtains and renews Let's Encrypt SSL certificates for your custom domain.
 
-1. **Copy Configuration**: Copy the `VPS Proxy/` folder from the repository to your VPS.
-2. **Configure Environment**: Rename `.env.example` to `.env` and configure your credentials:
+1. Create a directory for your proxy deployment (e.g., `/home/username/wcl-proxy`).
+2. Save the following **`docker-compose.yml`** to that directory:
+   ```yaml
+   services:
+     app:
+       image: bl4ut0/rce-proxy:latest
+       restart: unless-stopped
+       init: true
+       environment:
+         PORT: "3000"
+         PROXY_RUNTIME: "vps"
+         WCL_PROXY_SECRET: ${WCL_PROXY_SECRET:?Set WCL_PROXY_SECRET in .env}
+         DISCORD_PROXY_SECRET: ${DISCORD_PROXY_SECRET:?Set DISCORD_PROXY_SECRET in .env}
+         WCL_PROXY_MAX_RETRIES: ${WCL_PROXY_MAX_RETRIES:-2}
+         WCL_PROXY_MAX_BACKOFF_MS: ${WCL_PROXY_MAX_BACKOFF_MS:-15000}
+         WCL_PROXY_REQUEST_TIMEOUT_MS: ${WCL_PROXY_REQUEST_TIMEOUT_MS:-60000}
+         WCL_PROXY_CACHE_TTL_SECONDS: ${WCL_PROXY_CACHE_TTL_SECONDS:-300}
+         WCL_PROXY_STALE_TTL_SECONDS: ${WCL_PROXY_STALE_TTL_SECONDS:-86400}
+         WCL_MAX_CONCURRENT: ${WCL_MAX_CONCURRENT:-1}
+         WCL_LAUNCH_SPACING_MS: ${WCL_LAUNCH_SPACING_MS:-300}
+         WCL_V2_MAX_CONCURRENT: ${WCL_V2_MAX_CONCURRENT:-4}
+         WCL_V2_LAUNCH_SPACING_MS: ${WCL_V2_LAUNCH_SPACING_MS:-0}
+         DISCORD_QUEUE_INTERVAL_MS: ${DISCORD_QUEUE_INTERVAL_MS:-500}
+         DISCORD_REQUEST_TIMEOUT_MS: ${DISCORD_REQUEST_TIMEOUT_MS:-30000}
+       expose:
+         - "3000"
+       healthcheck:
+         test:
+           - CMD
+           - node
+           - -e
+           - fetch('http://127.0.0.1:3000/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+         interval: 30s
+         timeout: 5s
+         retries: 3
+         start_period: 10s
+       read_only: true
+       tmpfs:
+         - /tmp
+       security_opt:
+         - no-new-privileges:true
+       cap_drop:
+         - ALL
+       logging:
+         options:
+           max-size: 10m
+           max-file: "3"
+       networks:
+         - proxy-net
+
+     caddy:
+       image: caddy:2-alpine
+       restart: unless-stopped
+       ports:
+         - "80:80"
+         - "443:443"
+         - "443:443/udp"
+       environment:
+         DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+       volumes:
+         - ./Caddyfile:/etc/caddy/Caddyfile:ro
+         - caddy_data:/data
+         - caddy_config:/config
+       depends_on:
+         app:
+           condition: service_healthy
+       security_opt:
+         - no-new-privileges:true
+       logging:
+         options:
+           max-size: 10m
+           max-file: "3"
+       networks:
+         - proxy-net
+
+   volumes:
+     caddy_data:
+     caddy_config:
+
+   networks:
+     proxy-net:
+       driver: bridge
+   ```
+3. Save the following **`Caddyfile`** to the same directory:
+   ```caddy
+   {$DOMAIN} {
+       encode zstd gzip
+       reverse_proxy app:3000
+
+       log {
+           output stdout
+           format console
+       }
+   }
+   ```
+4. Create a **`.env`** file to supply your settings:
    ```bash
    DOMAIN=proxy.yourdomain.com
-   WCL_PROXY_SECRET=your_wcl_secret_here
-   DISCORD_PROXY_SECRET=your_discord_secret_here
+   WCL_PROXY_SECRET=your_long_wcl_secret_here
+   DISCORD_PROXY_SECRET=your_long_discord_secret_here
    ```
-3. **Launch the Stack**:
+5. Deploy:
    ```bash
-   chmod +x deploy.sh
-   ./deploy.sh
+   docker compose up -d
    ```
-   Caddy will automatically fetch SSL certificates for `proxy.yourdomain.com` and forward traffic to the proxy container.
 
 ---
 
 ### Option B: Local Home-Server Deployment (behind NPMPlus & CF Worker Relay)
 
-This option runs locally on a home server or NAS (using your residential IP address to bypass Cloudflare Worker shared IP limits) behind your own reverse proxy (e.g. **Nginx Proxy Manager Plus / NPMPlus**). A public **Cloudflare Worker** acts as a secure relay, hiding your home network's external IP address.
+This option runs locally on your home server or NAS behind your own reverse proxy (like **Nginx Proxy Manager Plus / NPMPlus**). A public **Cloudflare Worker** acts as a secure relay, hiding your home network's external IP address.
 
-1. **Copy Configuration**: Copy the `Local Proxy/` folder from the repository to your home server.
-2. **Configure Environment**: Rename `.env.example` to `.env` and configure your secrets:
-   ```bash
-   WCL_PROXY_SECRET=your_wcl_secret_here
-   DISCORD_PROXY_SECRET=your_discord_secret_here
+1. Create a directory on your local server (e.g., `/home/username/wcl-proxy`).
+2. Save the following **`docker-compose.yml`** to that directory:
+   ```yaml
+   services:
+     app:
+       image: bl4ut0/rce-proxy:latest
+       restart: unless-stopped
+       init: true
+       environment:
+         PORT: "3000"
+         PROXY_RUNTIME: "local-proxy"
+         WCL_PROXY_SECRET: ${WCL_PROXY_SECRET:?Set WCL_PROXY_SECRET in .env}
+         DISCORD_PROXY_SECRET: ${DISCORD_PROXY_SECRET:?Set DISCORD_PROXY_SECRET in .env}
+         WCL_PROXY_MAX_RETRIES: ${WCL_PROXY_MAX_RETRIES:-2}
+         WCL_PROXY_MAX_BACKOFF_MS: ${WCL_PROXY_MAX_BACKOFF_MS:-15000}
+         WCL_PROXY_REQUEST_TIMEOUT_MS: ${WCL_PROXY_REQUEST_TIMEOUT_MS:-60000}
+         WCL_PROXY_CACHE_TTL_SECONDS: ${WCL_PROXY_CACHE_TTL_SECONDS:-300}
+         WCL_PROXY_STALE_TTL_SECONDS: ${WCL_PROXY_STALE_TTL_SECONDS:-86400}
+         WCL_MAX_CONCURRENT: ${WCL_MAX_CONCURRENT:-1}
+         WCL_LAUNCH_SPACING_MS: ${WCL_LAUNCH_SPACING_MS:-300}
+         WCL_V2_MAX_CONCURRENT: ${WCL_V2_MAX_CONCURRENT:-4}
+         WCL_V2_LAUNCH_SPACING_MS: ${WCL_V2_LAUNCH_SPACING_MS:-0}
+         DISCORD_QUEUE_INTERVAL_MS: ${DISCORD_QUEUE_INTERVAL_MS:-500}
+         DISCORD_REQUEST_TIMEOUT_MS: ${DISCORD_REQUEST_TIMEOUT_MS:-30000}
+       ports:
+         - "3000:3000"
+       healthcheck:
+         test:
+           - CMD
+           - node
+           - -e
+           - fetch('http://127.0.0.1:3000/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+         interval: 30s
+         timeout: 5s
+         retries: 3
+         start_period: 10s
+       read_only: true
+       tmpfs:
+         - /tmp
+       security_opt:
+         - no-new-privileges:true
+       cap_drop:
+         - ALL
+       logging:
+         options:
+           max-size: 10m
+           max-file: "3"
    ```
-3. **Launch the Container**:
+3. Create a **`.env`** file to configure your secrets:
+   ```bash
+   WCL_PROXY_SECRET=your_long_wcl_secret_here
+   DISCORD_PROXY_SECRET=your_long_discord_secret_here
+   ```
+4. Start the container:
    ```bash
    docker compose up -d
    ```
-   The container will run on port `3000`.
-4. **NPMPlus Configuration**: Point a subdomain (e.g., `wclproxy.yourdomain.com`) to your Docker host IP on port `3000` with **Force SSL** and HTTP/2. Keep it proxied (**Orange Cloud enabled**) in your Cloudflare DNS dashboard to hide your home IP.
-5. **Configure Worker Relay**: In your Cloudflare Worker environment variables, add `BACKEND_URL` and set its value to your NPMPlus domain: `https://wclproxy.yourdomain.com`.
+5. **NPMPlus Configuration**: Point a subdomain (e.g., `wclproxy.yourdomain.com`) to your Docker host IP on port `3000` with **Force SSL** and HTTP/2. Keep it proxied (**Orange Cloud enabled**) in your Cloudflare DNS dashboard to hide your home IP.
+6. **Configure Worker Relay**: In your Cloudflare Worker environment variables, add `BACKEND_URL` and set its value to your NPMPlus domain: `https://wclproxy.yourdomain.com`.
 
 ---
 
-## Environment Variables Configuration
+## ⚙️ Environment Variables Configuration
 
 The following variables can be adjusted in your `.env` configuration file:
 
@@ -74,7 +230,7 @@ The following variables can be adjusted in your `.env` configuration file:
 
 ---
 
-## Google Apps Script Integration
+## 📝 Google Apps Script Integration
 
 Add the following parameters to your Google Sheet **Script Properties**:
 
@@ -85,7 +241,7 @@ Add the following parameters to your Google Sheet **Script Properties**:
 
 ---
 
-## Verification
+## 🔍 Verification
 
 Test the container's health by making a request to the `/healthz` endpoint:
 ```bash
