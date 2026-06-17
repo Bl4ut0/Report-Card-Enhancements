@@ -44,5 +44,5 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: bl4ut0/rce-proxy
-          readme-filepath: ./Local Proxy/README.md
+          readme-filepath: ./Docs/DOCKER_HUB_README.md
         continue-on-error: true
