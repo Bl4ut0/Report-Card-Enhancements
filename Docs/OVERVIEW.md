@@ -97,6 +97,7 @@ Report Card Enhancements/
     KNOWN_ISSUES.md
     VERSION_ORGANIZATION.md
     OVERVIEW.md
+    RELEASE_AND_DOCUMENTATION_GUIDELINES.md
 
   RCE Replacements/        ← Generated deployment-ready compiled outputs
     CLA/
@@ -138,7 +139,7 @@ Original Code/
 | `WCL Proxy/` (legacy) | Yes | Legacy WCL API proxy scaffold and documentation. |
 | `n8n Automations/` | Yes | Apps Script patch files for automation and orchestration. |
 | `V2 Wrapper/` | Yes | Warcraft Logs V1/V2 compatibility wrapper and version-specific replacement sets. |
-| `Docs/` | Yes | Project guidance, registry, and troubleshooting. |
+| `Docs/` | Yes | Project guidance, architecture overview, troubleshooting, versioning, and developer guidelines. |
 
 ## Automation Flow
 
