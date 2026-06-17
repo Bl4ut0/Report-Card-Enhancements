@@ -10,6 +10,11 @@
  */
 export default {
   async fetch(request, env) {
+    // Redirect direct browser GET requests to the repository to obscure endpoint existence
+    if (request.method === 'GET') {
+      return Response.redirect('https://github.com/Bl4ut0/Report-Card-Enhancements', 302);
+    }
+
     if (request.method !== 'POST') {
       return new Response('Method Not Allowed', { status: 405 });
     }

@@ -72,6 +72,11 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // Redirect direct browser GET requests (except health check) to the repository to obscure endpoint existence
+    if (request.method === 'GET' && url.pathname !== '/healthz') {
+      return Response.redirect('https://github.com/Bl4ut0/Report-Card-Enhancements', 302);
+    }
+
     // If BACKEND_URL is configured, the worker acts as a secure relay/forwarder to a self-hosted instance.
     // This allows hiding the home IP address / reverse proxy domain from the Google Sheets client.
     if (env.BACKEND_URL) {

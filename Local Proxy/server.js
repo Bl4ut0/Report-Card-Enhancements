@@ -369,7 +369,11 @@ app.post('/wcl', async (req, res) => {
       .send(responseText);
   }
 
-  res.status(502).send(`Bad Gateway: ${lastError ? lastError.message : 'Upstream Request Failed'}`);
+});
+
+// Wildcard fallback: Redirect all unhandled routes (e.g. direct browser access) to obscure endpoint existence
+app.use((req, res) => {
+  res.redirect('https://github.com/Bl4ut0/Report-Card-Enhancements');
 });
 
 // Start Server
