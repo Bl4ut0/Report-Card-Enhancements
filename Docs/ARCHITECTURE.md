@@ -201,27 +201,29 @@ Replacement sets must be organized by expansion, tool, and upstream source versi
 
 ## Warcraft Logs Proxy
 
-The Warcraft Logs proxy is available as a Cloudflare Worker or as the
-self-hosted VPS package. Both are reliability layers, not limit bypasses.
+The Warcraft Logs proxy is available as a Cloudflare Worker, a self-hosted VPS package (with Caddy SSL), or as a local Docker stack behind an existing proxy (like NPMPlus). All are reliability layers, not limit bypasses.
 The sheet-facing boundary is the provider-neutral HTTP contract documented in
 [PROXY_CONTRACT.md](PROXY_CONTRACT.md); additional worker platforms can
 implement the same contract without changing `WCL_Compat.gs`.
 
 ```text
 CLA/RPB source or V2 Wrapper
-  -> Combined Proxy Worker (/wcl)
-     or VPS Proxy (/wcl)
+  -> Combined Proxy Worker (/wcl) (Acts as direct proxy or secure Worker Relay)
+     or VPS Proxy (/wcl) (VPS with Caddy HTTPS)
+     or Local Proxy (/wcl) (Local Docker behind NPMPlus)
      -> allowlisted Warcraft Logs API URL
-     -> bounded retries for 429/502/503/504
+     -> Bounded retries for 429/502/503/504
      -> Retry-After-aware backoff
-     -> query caching with stale-on-error fallback
+     -> Query caching with stale-on-error fallback
 ```
 
 Client-side pacing remains implemented in `WCL_Compat.gs`. The Cloudflare
-deployment cannot guarantee one global queue across Worker isolates. The VPS
-deployment additionally enforces process-wide V1 and V2 queues because all
-traffic passes through one long-running Node.js process with one public egress
-IP. The VPS `app` service must remain at one replica for that guarantee.
+deployment cannot guarantee one global queue across Worker isolates. Both the VPS
+and Local Proxy deployments enforce process-wide V1 and V2 queues because all
+traffic passes through one long-running Node.js process with one dedicated egress
+IP. The local/VPS `app` service must remain at one replica for that guarantee. When
+using the Local Proxy deployment, configuring the Cloudflare Worker with a `BACKEND_URL`
+allows the worker to act as a secure relay, hiding the home IP address from sheets.
 
 ## Constraints
 

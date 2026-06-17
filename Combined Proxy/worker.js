@@ -70,11 +70,39 @@ function getQueueDelay(lastRequestTimeRef, intervalMs) {
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
+
+    // If BACKEND_URL is configured, the worker acts as a secure relay/forwarder to a self-hosted instance.
+    // This allows hiding the home IP address / reverse proxy domain from the Google Sheets client.
+    if (env.BACKEND_URL) {
+      const backendUrl = new URL(env.BACKEND_URL);
+      const targetUrl = new URL(url.pathname + url.search, backendUrl);
+
+      const headers = new Headers(request.headers);
+      const fetchOpts = {
+        method: request.method,
+        headers: headers
+      };
+      if (request.method !== 'GET' && request.method !== 'HEAD' && request.body) {
+        fetchOpts.body = request.body;
+      }
+
+      try {
+        return await fetch(targetUrl.toString(), fetchOpts);
+      } catch (err) {
+        return new Response(`Worker Relay Error: Failed to forward request to backend: ${err.message}`, {
+          status: 502,
+          headers: {
+            'x-wcl-proxy-relayed': 'true',
+            'x-wcl-proxy-runtime': 'cloudflare-worker'
+          }
+        });
+      }
+    }
+
     if (request.method !== 'POST') {
       return new Response('Method Not Allowed', { status: 405 });
     }
-
-    const url = new URL(request.url);
 
     // Route based on path or headers
     const isDiscord = url.pathname.startsWith('/discord') || request.headers.has('x-discord-webhook');
