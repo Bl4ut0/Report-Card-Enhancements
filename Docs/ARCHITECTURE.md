@@ -35,8 +35,8 @@ Committed layers:
 Combined Proxy/
   Consolidated Cloudflare Worker proxy (Discord webhook relay + WCL proxy with SHA-256 caching and fallback). Source of truth; mirrored to standalone deploy subrepo.
 
-VPS Proxy/
-  Containerized, self-hostable proxy (Discord webhook relay + WCL proxy with process-wide V1/V2 queues, local in-memory caching, and fallback). Configured for VPS hosting via Docker Compose and automatic Caddy HTTPS.
+Self-Hosted Proxy/
+  Unified containerized proxy (Discord webhook relay + WCL proxy with process-wide V1/V2 queues, local in-memory caching, and fallback). Configured for self-hosting on a VPS (via Caddy auto-HTTPS) or local home-server (behind NPMPlus).
 
 Discord Proxy/
   Legacy standalone Discord webhook relay documentation and worker scaffold.
@@ -209,8 +209,7 @@ implement the same contract without changing `WCL_Compat.gs`.
 ```text
 CLA/RPB source or V2 Wrapper
   -> Combined Proxy Worker (/wcl) (Acts as direct proxy or secure Worker Relay)
-     or VPS Proxy (/wcl) (VPS with Caddy HTTPS)
-     or Local Proxy (/wcl) (Local Docker behind NPMPlus)
+     or Self-Hosted Proxy (/wcl) (VPS with Caddy SSL or Local Docker behind NPMPlus)
      -> allowlisted Warcraft Logs API URL
      -> Bounded retries for 429/502/503/504
      -> Retry-After-aware backoff
@@ -218,11 +217,11 @@ CLA/RPB source or V2 Wrapper
 ```
 
 Client-side pacing remains implemented in `WCL_Compat.gs`. The Cloudflare
-deployment cannot guarantee one global queue across Worker isolates. Both the VPS
-and Local Proxy deployments enforce process-wide V1 and V2 queues because all
+deployment cannot guarantee one global queue across Worker isolates. The Self-Hosted
+Proxy deployment (VPS or Local) enforces process-wide V1 and V2 queues because all
 traffic passes through one long-running Node.js process with one dedicated egress
-IP. The local/VPS `app` service must remain at one replica for that guarantee. When
-using the Local Proxy deployment, configuring the Cloudflare Worker with a `BACKEND_URL`
+IP. The self-hosted `app` service must remain at one replica for that guarantee. When
+using the Local configuration (behind NPMPlus), configuring the Cloudflare Worker with a `BACKEND_URL`
 allows the worker to act as a secure relay, hiding the home IP address from sheets.
 
 ## Constraints

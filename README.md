@@ -7,8 +7,7 @@ Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Lo
 | Folder | Purpose |
 |---|---|
 | `Combined Proxy/` | Consolidated Cloudflare Worker proxy (Discord + WCL). Source of truth; mirrored to [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) for 1-click user deployment. |
-| `VPS Proxy/` | Docker Compose deployment with a Node.js proxy, process-wide WCL queues, and automatic HTTPS through Caddy. |
-| `Local Proxy/` | Docker Compose deployment with a Node.js proxy, designed for local hosts running behind an existing reverse proxy (like NPMPlus). |
+| `Self-Hosted Proxy/` | Unified Docker Compose deployment for both VPS (Caddy auto-HTTPS) and Local Home-Server (behind NPMPlus) setups. |
 | `V2 Wrapper/` | Warcraft Logs V1→V2 GraphQL compatibility layer and version-specific replacement sets. |
 | `RCE Replacements/` | Generated deployment-ready output files (`.gs` replacements and unified `wrapper.gs`). |
 | `n8n Automations/` | Apps Script automation patches and n8n compose setup docs. |
@@ -30,8 +29,7 @@ Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Lo
 |---|---|
 | **Combined proxy + wrapper setup** (recommended) | [Docs/COMBINED_SYSTEM.md](Docs/COMBINED_SYSTEM.md), [Docs/SHEET_CODE.md](Docs/SHEET_CODE.md) |
 | **1-click proxy deployment** | [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) |
-| **Dedicated-IP VPS deployment** | [VPS Proxy/README.md](VPS%20Proxy/README.md) |
-| **Local Docker deployment (behind NPMPlus)** | [Local Proxy/README.md](Local%20Proxy/README.md) |
+| **Self-Hosted Docker deployment** (VPS / Local) | [Self-Hosted Proxy/README.md](Self-Hosted%20Proxy/README.md) |
 | **Portable proxy contract** | [Docs/PROXY_CONTRACT.md](Docs/PROXY_CONTRACT.md) |
 | **Developer workflow & build rules** | [Docs/DESIGN_FRAMEWORK.md](Docs/DESIGN_FRAMEWORK.md) |
 | **Testing & verification** | [Docs/TESTING_GUIDE.md](Docs/TESTING_GUIDE.md) |

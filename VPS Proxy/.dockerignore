@@ -1,9 +1,0 @@
-.env
-.git
-.gitignore
-README.md
-Caddyfile
-docker-compose.yml
-deploy.sh
-node_modules
-npm-debug.log*

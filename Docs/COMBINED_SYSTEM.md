@@ -131,21 +131,21 @@ Any provider can be used when it implements the
 
 ---
 
-## 4. Dedicated-IP VPS Deployment
+## 4. Self-Hosted Deployments (VPS or Local Home Server)
 
-For sustained automation on a public VPS, deploy the package in [VPS Proxy/](../VPS%20Proxy/). It runs the same `/wcl` and `/discord` contracts behind automatic Caddy HTTPS (which handles TLS certificate generation and renewal).
+For users who want dedicated execution queues and to use their own public IP address (VPS or home residential IP), the proxy stack is packaged in [Self-Hosted Proxy/](../Self-Hosted%20Proxy/).
 
-- V1 REST defaults to one active upstream request with 300 ms launch spacing.
-- V2 GraphQL defaults to four active upstream requests.
-- The Compose deployment runs Caddy and the proxy application as a single stack.
-- All limits are configurable through `VPS Proxy/.env`.
+Both deployment options run from the same pre-built container image (`bl4ut0/rce-proxy:latest`) and are configured via environment variables in a `.env` file.
 
-See [VPS Proxy/README.md](../VPS%20Proxy/README.md) for deployment instructions.
+### Option A: Dedicated-IP VPS Deployment (Caddy SSL)
+Deploying on a public VPS allows you to run the proxy application alongside a Caddy reverse proxy, which automatically handles SSL/TLS certificates for your custom domain.
+- The stack is managed via `docker-compose.vps.yml`.
+- Caddy automatically generates and renews certificates.
+- All options are configurable through `Self-Hosted Proxy/.env`.
 
----
+See [Self-Hosted Proxy/README.md](../Self-Hosted%20Proxy/README.md) for detailed VPS deployment steps.
 
-## 5. Local Docker + Cloudflare Worker Relay Deployment (Home Server)
-
+### Option B: Local Docker + Cloudflare Worker Relay Deployment
 For users who want to run the proxy on their home network (e.g. on a NAS or local server) using their dedicated home IP address but do not want to expose their home external IP to the public internet:
 
 ```mermaid
@@ -161,7 +161,7 @@ graph TD
 
     subgraph Home / Local Server (Docker)
         NPM[Nginx Proxy Manager Plus / NPMPlus]
-        LocalProxy[Local Proxy Container]
+        SelfHostedProxy[Self-Hosted Proxy Container]
     end
 
     subgraph External APIs
@@ -171,14 +171,14 @@ graph TD
 
     GAS -->|POST to Workers URL| CF
     CF -->|Forward Relay via BACKEND_URL| NPM
-    NPM -->|Route to Port 4040| LocalProxy
-    LocalProxy -->|Fetch (Home Residential IP)| WclAPI
-    LocalProxy -->|Fetch| DiscordAPI
+    NPM -->|Route to Port 4040| SelfHostedProxy
+    SelfHostedProxy -->|Fetch (Home Residential IP)| WclAPI
+    SelfHostedProxy -->|Fetch| DiscordAPI
 ```
 
-### Setup Instructions
+#### Setup Instructions
 
-1. **Deploy Local Container**: Set up the container in [Local Proxy/](../Local%20Proxy/) on your home server:
+1. **Deploy Container**: Set up the container in [Self-Hosted Proxy/](../Self-Hosted%20Proxy/) on your local server:
    ```bash
    cp .env.example .env
    # Set WCL_PROXY_SECRET and DISCORD_PROXY_SECRET
@@ -190,4 +190,4 @@ graph TD
 
 Requests will now route securely through the Worker and your local reverse proxy to your home container, performing WCL fetches from your unshared home IP.
 
-See [Local Proxy/README.md](../Local%20Proxy/README.md) for detailed instructions.
+See [Self-Hosted Proxy/README.md](../Self-Hosted%20Proxy/README.md) for detailed local deployment instructions.

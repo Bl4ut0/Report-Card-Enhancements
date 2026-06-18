@@ -11,11 +11,11 @@ This document defines the standardized versioning structure, documentation manag
 
 To maintain order across multiple deployment tracks and game eras, the project uses a tiered versioning system:
 
-### A. Proxy & Deployments (Worker, VPS, Local)
-* **Scope**: `Combined Proxy/`, `VPS Proxy/`, `Local Proxy/`
+### A. Proxy & Deployments (Worker, Self-Hosted)
+* **Scope**: `Combined Proxy/`, `Self-Hosted Proxy/`
 * **Version Format**: Semantic Versioning (`Major.Minor.Patch`)
   * **Major**: Breaking contract changes (e.g. altering the JSON envelope format in `PROXY_CONTRACT.md`).
-  * **Minor**: Adding a new deployment track (e.g. adding the `Local Proxy` NPMPlus track) or introducing major feature additions (e.g. caching).
+  * **Minor**: Adding a new deployment track (e.g. adding the `Self-Hosted Proxy` track) or introducing major feature additions (e.g. caching).
   * **Patch**: Internal fixes (e.g. retry-after abort optimizations, syntax corrections).
 * **Current Version**: `v2.1.0` (Consolidated proxy + Worker relay support + Smart 429 aborts).
 
@@ -50,15 +50,15 @@ To maintain order across multiple deployment tracks and game eras, the project u
 * [README.md](../README.md): High-level system overview, quick-start index, and era support matrix.
 * [Docs/OVERVIEW.md](OVERVIEW.md): Directory map and ownership table of repo folders.
 * [Docs/ARCHITECTURE.md](ARCHITECTURE.md): Architectural boundaries, lane design, and data flow.
-* [Docs/COMBINED_SYSTEM.md](COMBINED_SYSTEM.md): Deployment track details (Direct Worker, VPS Caddy, Local NPMPlus).
+* [Docs/COMBINED_SYSTEM.md](Docs/COMBINED_SYSTEM.md): Deployment track details (Direct Worker, Self-Hosted VPS/Local).
 * [Docs/DESIGN_FRAMEWORK.md](DESIGN_FRAMEWORK.md): Code compilation workflow, folder mappings, and testing setup.
 * [Docs/PROXY_CONTRACT.md](PROXY_CONTRACT.md): The provider-neutral HTTP endpoint contract.
 * [Docs/TESTING_GUIDE.md](TESTING_GUIDE.md): Local testing suites, comparison scripts, and verification metrics.
 * [Docs/RELEASE_AND_DOCUMENTATION_GUIDELINES.md](RELEASE_AND_DOCUMENTATION_GUIDELINES.md) *(This File)*: Version registry, documentation standards, and AI execution boundaries.
 
 ### B. Formatting & Linking Rules
-* **No Local Paths**: Never use hardcoded absolute local development paths (e.g. `c:/Dev Projects/` or `/Users/username/...`). Always use relative paths (`../Local Proxy`) or place-holders.
-* **Codebase Links**: Always link to files and directories using standard markdown link syntax with the `file:///` scheme (e.g. `[server.js](file:///c:/Dev Projects/Report Card Enhancements/Local Proxy/server.js)`). Use relative links where appropriate in the repository, but ensure absolute paths are normalized for local runtime tools.
+* **No Local Paths**: Never use hardcoded absolute local development paths (e.g. `c:/Dev Projects/` or `/Users/username/...`). Always use relative paths (`../Self-Hosted Proxy`) or place-holders.
+* **Codebase Links**: Always link to files and directories using standard markdown link syntax with the `file:///` scheme (e.g. `[server.js](file:///c:/Dev Projects/Report Card Enhancements/Self-Hosted Proxy/server.js)`). Use relative links where appropriate in the repository, but ensure absolute paths are normalized for local runtime tools.
 * **Markdown Alerts**: Use GitHub alerts (`> [!NOTE]`, `> [!IMPORTANT]`, `> [!WARNING]`) strategically to highlight critical settings, breaking changes, or user actions.
 
 ---
@@ -77,7 +77,7 @@ When working on this codebase, the AI assistant must operate strictly within the
 1. **Modify Wrapper Core**: You are allowed to edit `V2 Wrapper/shared/WCL_Compat.gs` to optimize V2 GraphQL translation, fix parsing mapping bugs, adjust pacing, or manage HTTP headers.
 2. **Modify Discord Helper**: You are allowed to edit `n8n Automations/Shared_DiscordWebhook.gs` to modify webhook payload packaging or proxy routing.
 3. **Add Version-Specific Replacements**: You are allowed to copy a raw core file from an upstream sheet, place it in the appropriate `V2 Wrapper/replacements/<Era>/<Tool>/<Version>/` directory, and patch it to route calls through the wrapper.
-4. **Modify Proxy Code**: You are allowed to edit `Combined Proxy/worker.js`, `WCL Proxy/worker.js`, and `Local Proxy/server.js` to optimize rate limiting, cache keys, error fallbacks, and routing.
+4. **Modify Proxy Code**: You are allowed to edit `Combined Proxy/worker.js`, `WCL Proxy/worker.js`, and `Self-Hosted Proxy/server.js` to optimize rate limiting, cache keys, error fallbacks, and routing.
 5. **Add Deployment Configuration**: You are allowed to create/modify docker compose files, Dockerfiles, Caddyfiles, and GitHub Action workflows to support deployment.
 6. **Compile Code**: You are allowed to execute `node build_combined.js` to compile the final codebase.
 7. **Run Tests**: You are allowed to run `npm test` or specific scripts under `tests/` to verify parity.

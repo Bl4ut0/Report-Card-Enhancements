@@ -46,20 +46,15 @@ Report Card Enhancements/
       CHANGELOG.md
       RATE_LIMITING.md
 
-  VPS Proxy/               ← Containerized self-hostable proxy (Discord + WCL) for VPS hosting (Caddy HTTPS)
+  Self-Hosted Proxy/       ← Unified containerized proxy for VPS (Caddy SSL) or Local Home-Server (NPMPlus)
     README.md
     server.js
     package.json
+    package-lock.json
     Dockerfile
     Caddyfile
-    docker-compose.yml
-
-  Local Proxy/             ← Containerized proxy for local docker hosts (NPMPlus + Cloudflare Worker relay)
-    README.md
-    server.js
-    package.json
-    Dockerfile
-    docker-compose.yml
+    docker-compose.yml      # Local home-server compose config
+    docker-compose.vps.yml  # VPS with Caddy compose config
     .env.example
 
   n8n Automations/
@@ -133,8 +128,7 @@ Original Code/
 | `Current Source/` snapshots | Local only | Ignored source snapshots used for private/local review. |
 | `Original Code/` snapshots | Local only | Ignored upstream/reference snapshots. |
 | `Combined Proxy/` | Yes | Consolidated Cloudflare Worker proxy and source-level proxy files. Mirrored to standalone subrepo. |
-| `VPS Proxy/` | Yes | Containerized self-hostable Node.js + Caddy proxy service for VPS deployment (Direct DNS/SSL). |
-| `Local Proxy/` | Yes | Containerized proxy service for local docker hosts running behind existing proxies like NPMPlus (Cloudflare Worker relay). |
+| `Self-Hosted Proxy/` | Yes | Unified containerized proxy service for VPS (Caddy SSL) or Local Home-Server (NPMPlus) deployments. |
 | `Discord Proxy/` (legacy) | Yes | Legacy Worker relay and documentation. |
 | `WCL Proxy/` (legacy) | Yes | Legacy WCL API proxy scaffold and documentation. |
 | `n8n Automations/` | Yes | Apps Script patch files for automation and orchestration. |

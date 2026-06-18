@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'Local Proxy/**'
+      - 'Self-Hosted Proxy/**'
   workflow_dispatch:
 
 jobs:
@@ -30,8 +30,8 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: "./Local Proxy"
-          file: "./Local Proxy/Dockerfile"
+          context: "./Self-Hosted Proxy"
+          file: "./Self-Hosted Proxy/Dockerfile"
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
