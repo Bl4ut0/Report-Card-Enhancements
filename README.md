@@ -27,7 +27,7 @@ Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Lo
 
 | Area | Start Here |
 |---|---|
-| **Combined proxy + wrapper setup** (recommended) | [Docs/COMBINED_SYSTEM.md](Docs/COMBINED_SYSTEM.md), [Docs/SHEET_CODE.md](Docs/SHEET_CODE.md) |
+| **Combined proxy + wrapper setup** (recommended) | [Docs/COMBINED_SYSTEM.md](Docs/COMBINED_SYSTEM.md), [RCE Replacements/](RCE%20Replacements/) |
 | **1-click proxy deployment** | [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) |
 | **Self-Hosted Docker deployment** (VPS / Local) | [Self-Hosted Proxy/README.md](Self-Hosted%20Proxy/README.md) |
 | **Portable proxy contract** | [Docs/PROXY_CONTRACT.md](Docs/PROXY_CONTRACT.md) |

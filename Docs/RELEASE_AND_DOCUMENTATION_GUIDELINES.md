@@ -50,11 +50,14 @@ To maintain order across multiple deployment tracks and game eras, the project u
 * [README.md](../README.md): High-level system overview, quick-start index, and era support matrix.
 * [Docs/OVERVIEW.md](OVERVIEW.md): Directory map and ownership table of repo folders.
 * [Docs/ARCHITECTURE.md](ARCHITECTURE.md): Architectural boundaries, lane design, and data flow.
-* [Docs/COMBINED_SYSTEM.md](Docs/COMBINED_SYSTEM.md): Deployment track details (Direct Worker, Self-Hosted VPS/Local).
+* [Docs/COMBINED_SYSTEM.md](COMBINED_SYSTEM.md): Deployment track details (Direct Worker, Self-Hosted VPS/Local).
 * [Docs/DESIGN_FRAMEWORK.md](DESIGN_FRAMEWORK.md): Code compilation workflow, folder mappings, and testing setup.
+* [Docs/DOCKER_HUB_README.md](DOCKER_HUB_README.md): Unified Docker Hub deployment and configuration reference.
+* [Docs/KNOWN_ISSUES.md](KNOWN_ISSUES.md): Active bugs, rate-limit edge cases, and runtime resolution behaviors.
 * [Docs/PROXY_CONTRACT.md](PROXY_CONTRACT.md): The provider-neutral HTTP endpoint contract.
-* [Docs/TESTING_GUIDE.md](TESTING_GUIDE.md): Local testing suites, comparison scripts, and verification metrics.
 * [Docs/RELEASE_AND_DOCUMENTATION_GUIDELINES.md](RELEASE_AND_DOCUMENTATION_GUIDELINES.md) *(This File)*: Version registry, documentation standards, and AI execution boundaries.
+* [Docs/TESTING_GUIDE.md](TESTING_GUIDE.md): Local testing suites, comparison scripts, and verification metrics.
+* [Docs/VERSION_ORGANIZATION.md](VERSION_ORGANIZATION.md): Target era attributions and version-specific support matrix.
 
 ### B. Formatting & Linking Rules
 * **No Local Paths**: Never use hardcoded absolute local development paths (e.g. `c:/Dev Projects/` or `/Users/username/...`). Always use relative paths (`../Self-Hosted Proxy`) or place-holders.

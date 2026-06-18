@@ -88,11 +88,15 @@ Report Card Enhancements/
 
   Docs/
     ARCHITECTURE.md
+    COMBINED_SYSTEM.md
     DESIGN_FRAMEWORK.md
+    DOCKER_HUB_README.md
     KNOWN_ISSUES.md
-    VERSION_ORGANIZATION.md
     OVERVIEW.md
+    PROXY_CONTRACT.md
     RELEASE_AND_DOCUMENTATION_GUIDELINES.md
+    TESTING_GUIDE.md
+    VERSION_ORGANIZATION.md
 
   RCE Replacements/        ← Generated deployment-ready compiled outputs
     CLA/
