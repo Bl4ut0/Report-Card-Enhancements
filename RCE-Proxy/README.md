@@ -1,4 +1,4 @@
-# CLA/RPB Combined API Proxy
+# RCE Proxy (Cloudflare Worker)
 
 A lightweight Cloudflare Worker that acts as a secure relay between your Google Sheets (CLA/RPB Report Cards) and external APIs — **Warcraft Logs** and **Discord Webhooks**.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Combined Proxy — One-Click Deploy Script
+ * RCE Proxy — One-Click Deploy Script
  *
  * Usage:
  *   npx wrangler deploy          <-- deploys the worker code only
@@ -68,7 +68,7 @@ function run(cmd, description) {
 
 // ── Main ─────────────────────────────────────────────────────────────
 console.log('╔══════════════════════════════════════════════════════════════╗');
-console.log('║        Combined API Proxy — Deploy & Secret Setup          ║');
+console.log('║            RCE Proxy — Deploy & Secret Setup               ║');
 console.log('╚══════════════════════════════════════════════════════════════╝');
 
 if (isDryRun) {

@@ -6,15 +6,15 @@ Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Lo
 
 | Folder | Purpose |
 |---|---|
-| `Combined Proxy/` | Consolidated Cloudflare Worker proxy (Discord + WCL). Source of truth; mirrored to [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) for 1-click user deployment. |
+| `RCE-Proxy/` | Consolidated Cloudflare Worker proxy (Discord + WCL). Source of truth; mirrored to [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) for 1-click user deployment. |
 | `Self-Hosted Proxy/` | Unified Docker Compose deployment for both VPS (Caddy auto-HTTPS) and Local Home-Server (behind NPMPlus) setups. |
 | `V2 Wrapper/` | Warcraft Logs V1→V2 GraphQL compatibility layer and version-specific replacement sets. |
 | `RCE Replacements/` | Generated deployment-ready output files (`.gs` replacements and unified `wrapper.gs`). |
 | `n8n Automations/` | Apps Script automation patches and n8n compose setup docs. |
 | `tests/` | V1 ↔ V2 API comparison suite, RPB query verification, and Excel comparison tools. See [TESTING_GUIDE.md](Docs/TESTING_GUIDE.md). |
 | `Docs/` | Architecture, setup notes, design framework, and troubleshooting. |
-| `Discord Proxy/` | Discord webhook relay docs (standalone code consolidated into `Combined Proxy/`). |
-| `WCL Proxy/` | WCL API proxy scaffold docs (standalone code consolidated into `Combined Proxy/`). |
+| `Discord Proxy/` | Discord webhook relay docs (standalone code consolidated into `RCE-Proxy/`). |
+| `WCL Proxy/` | WCL API proxy scaffold docs (standalone code consolidated into `RCE-Proxy/`). |
 
 ### Local-Only Folders (git-ignored)
 
@@ -55,7 +55,7 @@ Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Lo
 
 ### Development Roadmap
 - [x] **Phase 1: Complete V2 GraphQL Adapters**: Implement event and table GraphQL query fetches and write adaptation functions to match the shapes expected by the sheet logic.
-- [x] **Phase 2: Combined Proxy Testing & Mirroring**: Validate, test, and consolidate the Discord + WCL proxy ([Combined Proxy/worker.js](Combined%20Proxy/worker.js)) and mirror it to the standalone deploy repo [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) for 1-click deployment.
+- [x] **Phase 2: Combined Proxy Testing & Mirroring**: Validate, test, and consolidate the Discord + WCL proxy ([RCE-Proxy/worker.js](RCE-Proxy/worker.js)) and mirror it to the standalone deploy repo [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) for 1-click deployment.
 - [x] **Phase 3: TBC v1.6.0a End-to-End Proof of Concept**: Apply the replacement sets for TBC CLA and RPB v1.6.0a and verify full compatibility and output parity with live Warcraft Logs V1/V2 endpoints.
 - [x] **Phase 4: Client-Side Request Pacing**: Implement rate-limit pacing directly in `WCL_Compat.gs` to enforce safe fetch intervals, avoiding Worker-side queuing to prevent CPU duration limits.
 - [ ] **Phase 5: Expand Era Coverage**: Port replacement sets to other game eras (Vanilla, Season of Discovery, WotLK, MoP).

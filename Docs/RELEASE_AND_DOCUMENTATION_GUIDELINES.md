@@ -12,7 +12,7 @@ This document defines the standardized versioning structure, documentation manag
 To maintain order across multiple deployment tracks and game eras, the project uses a tiered versioning system:
 
 ### A. Proxy & Deployments (Worker, Self-Hosted)
-* **Scope**: `Combined Proxy/`, `Self-Hosted Proxy/`
+* **Scope**: `RCE-Proxy/`, `Self-Hosted Proxy/`
 * **Version Format**: Semantic Versioning (`Major.Minor.Patch`)
   * **Major**: Breaking contract changes (e.g. altering the JSON envelope format in `PROXY_CONTRACT.md`).
   * **Minor**: Adding a new deployment track (e.g. adding the `Self-Hosted Proxy` track) or introducing major feature additions (e.g. caching).
@@ -77,7 +77,7 @@ When working on this codebase, the AI assistant must operate strictly within the
 1. **Modify Wrapper Core**: You are allowed to edit `V2 Wrapper/shared/WCL_Compat.gs` to optimize V2 GraphQL translation, fix parsing mapping bugs, adjust pacing, or manage HTTP headers.
 2. **Modify Discord Helper**: You are allowed to edit `n8n Automations/Shared_DiscordWebhook.gs` to modify webhook payload packaging or proxy routing.
 3. **Add Version-Specific Replacements**: You are allowed to copy a raw core file from an upstream sheet, place it in the appropriate `V2 Wrapper/replacements/<Era>/<Tool>/<Version>/` directory, and patch it to route calls through the wrapper.
-4. **Modify Proxy Code**: You are allowed to edit `Combined Proxy/worker.js`, `WCL Proxy/worker.js`, and `Self-Hosted Proxy/server.js` to optimize rate limiting, cache keys, error fallbacks, and routing.
+4. **Modify Proxy Code**: You are allowed to edit `RCE-Proxy/worker.js`, `WCL Proxy/worker.js`, and `Self-Hosted Proxy/server.js` to optimize rate limiting, cache keys, error fallbacks, and routing.
 5. **Add Deployment Configuration**: You are allowed to create/modify docker compose files, Dockerfiles, Caddyfiles, and GitHub Action workflows to support deployment.
 6. **Compile Code**: You are allowed to execute `node build_combined.js` to compile the final codebase.
 7. **Run Tests**: You are allowed to run `npm test` or specific scripts under `tests/` to verify parity.

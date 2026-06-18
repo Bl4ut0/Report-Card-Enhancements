@@ -21,7 +21,7 @@ Committed files:
 
 ```text
 Report Card Enhancements/
-  Combined Proxy/          ← Consolidated Cloudflare Worker (Discord + WCL) source files; mirrored to RCE-Proxy subrepo
+  RCE-Proxy/               ← Consolidated Cloudflare Worker (Discord + WCL) source files; mirrored to RCE-Proxy subrepo
     README.md
     SYNC_GUIDE.md
     worker.js
@@ -127,7 +127,7 @@ Original Code/
 | `RCE Replacements/` | Yes | Generated deployment-ready outputs (patches, unified wrapper, and worker packages). |
 | `Current Source/` snapshots | Local only | Ignored source snapshots used for private/local review. |
 | `Original Code/` snapshots | Local only | Ignored upstream/reference snapshots. |
-| `Combined Proxy/` | Yes | Consolidated Cloudflare Worker proxy and source-level proxy files. Mirrored to standalone subrepo. |
+| `RCE-Proxy/` | Yes | Consolidated Cloudflare Worker proxy and source-level proxy files. Mirrored to standalone subrepo. |
 | `Self-Hosted Proxy/` | Yes | Unified containerized proxy service for VPS (Caddy SSL) or Local Home-Server (NPMPlus) deployments. |
 | `Discord Proxy/` (legacy) | Yes | Legacy Worker relay and documentation. |
 | `WCL Proxy/` (legacy) | Yes | Legacy WCL API proxy scaffold and documentation. |

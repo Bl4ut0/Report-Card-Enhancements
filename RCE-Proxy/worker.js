@@ -1,5 +1,5 @@
 /**
- * Combined Cloudflare Worker Proxy for CLA/RPB.
+ * RCE Cloudflare Worker Proxy for CLA/RPB.
  * Combines both Discord Webhook Relay and Warcraft Logs API Proxy.
  *
  * Routing logic:

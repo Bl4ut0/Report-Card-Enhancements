@@ -1,6 +1,6 @@
 # Syncing Updates to the Deploy Repo
 
-This document describes how to push updates from the main monorepo (`Report Card Enhancements/Combined Proxy/`) to the standalone deploy repo (`RCE-Proxy`).
+This document describes how to push updates from the main monorepo (`Report Card Enhancements/RCE-Proxy/`) to the standalone deploy repo (`RCE-Proxy`).
 
 ---
 
@@ -18,7 +18,7 @@ Your folder structure should look like:
 ```
 Dev Projects/
 ├── Report Card Enhancements/     ← main monorepo (source of truth)
-│   └── Combined Proxy/           ← worker source files live here
+│   └── RCE-Proxy/                ← worker source files live here
 │       ├── worker.js
 │       ├── wrangler.toml
 │       ├── deploy.js
@@ -36,7 +36,7 @@ Dev Projects/
 
 ## Pushing an Update
 
-After making changes to `Combined Proxy/` in the monorepo, run these commands to sync and push:
+After making changes to `RCE-Proxy/` in the monorepo, run these commands to sync and push:
 
 ### Windows (PowerShell)
 
@@ -107,9 +107,9 @@ $s="."; $d="../../RCE-Proxy"; Copy-Item "$s\worker.js","$s\wrangler.toml","$s\de
 
 ## Checklist Before Pushing an Update
 
-- [ ] Tested changes locally with `npx wrangler dev` in the `Combined Proxy/` folder
+- [ ] Tested changes locally with `npx wrangler dev` in the `RCE-Proxy/` folder
 - [ ] Ran test suite (`npm test` in `/tests`) to verify proxy behavior
 - [ ] Updated README.md if any configuration options changed
 - [ ] Committed changes to the monorepo first (`Report Card Enhancements`)
-- [ ] Synced files to `CLA-RPB-Proxy` using the commands above
-- [ ] Pushed to `CLA-RPB-Proxy` main branch
+- [ ] Synced files to `RCE-Proxy` using the commands above
+- [ ] Pushed to `RCE-Proxy` main branch

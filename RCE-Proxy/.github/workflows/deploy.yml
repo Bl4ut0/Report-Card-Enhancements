@@ -1,4 +1,4 @@
-name: Deploy Combined API Proxy
+name: Deploy RCE Proxy
 
 on:
   push:

@@ -32,7 +32,7 @@ Automation combines those physical boundaries into an expansion lane:
 Committed layers:
 
 ```text
-Combined Proxy/
+RCE-Proxy/
   Consolidated Cloudflare Worker proxy (Discord webhook relay + WCL proxy with SHA-256 caching and fallback). Source of truth; mirrored to standalone deploy subrepo.
 
 Self-Hosted Proxy/
@@ -178,7 +178,7 @@ There are two supported approaches:
 
 | Option | Location | When to Use |
 |---|---|---|
-| Combined Proxy / Compiled replacements | Compiled automatically by `build_combined.js` | When deploying the sheet with fully integrated proxy routing. |
+| RCE Proxy / Compiled replacements | Compiled automatically by `build_combined.js` | When deploying the sheet with fully integrated proxy routing. |
 | Patch-only wrapper/helper | `n8n Automations/Shared_DiscordWebhook.gs` | When core source should remain untouched and export buttons can call wrapper functions. |
 
 For n8n-driven runs, the preferred approach is to let the sheets own public announcements while n8n owns queueing, locks, retries, and callback handling.
@@ -208,7 +208,7 @@ implement the same contract without changing `WCL_Compat.gs`.
 
 ```text
 CLA/RPB source or V2 Wrapper
-  -> Combined Proxy Worker (/wcl) (Acts as direct proxy or secure Worker Relay)
+  -> RCE Proxy Worker (/wcl) (Acts as direct proxy or secure Worker Relay)
      or Self-Hosted Proxy (/wcl) (VPS with Caddy SSL or Local Docker behind NPMPlus)
      -> allowlisted Warcraft Logs API URL
      -> Bounded retries for 429/502/503/504
