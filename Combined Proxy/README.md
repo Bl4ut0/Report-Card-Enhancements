@@ -37,10 +37,10 @@ Click the button below to deploy this worker to your own free Cloudflare account
 
 1. Go to your [Cloudflare Dashboard](https://dash.cloudflare.com).
 2. Click **"Workers & Pages"** in the left sidebar.
-3. Click on **"combined-api-proxy"** (or whatever name was assigned).
+3. Click on **"rce-proxy"** (or whatever name was assigned).
 4. Copy the worker URL — it looks like:
    ```
-   https://combined-api-proxy.YOUR_SUBDOMAIN.workers.dev
+   https://rce-proxy.YOUR_SUBDOMAIN.workers.dev
    ```
 
 <!-- Screenshot: Worker overview page showing the URL -->
@@ -73,9 +73,9 @@ Your proxy needs two secret passwords — one for Warcraft Logs requests and one
 
 | Property Name | Value |
 |---|---|
-| `WCL_PROXY_URL` | Your `/wcl` proxy URL from Step 3 (e.g. `https://combined-api-proxy.xyz.workers.dev/wcl`) |
+| `WCL_PROXY_URL` | Your `/wcl` proxy URL from Step 3 (e.g. `https://rce-proxy.xyz.workers.dev/wcl`) |
 | `WCL_PROXY_SECRET` | The same password you set in Step 4 |
-| `DISCORD_PROXY_URL` | Your `/discord` proxy URL from Step 3 (e.g. `https://combined-api-proxy.xyz.workers.dev/discord`) |
+| `DISCORD_PROXY_URL` | Your `/discord` proxy URL from Step 3 (e.g. `https://rce-proxy.xyz.workers.dev/discord`) |
 | `DISCORD_PROXY_SECRET` | The same password you set in Step 4 |
 
 <!-- Screenshot: Google Apps Script project settings with properties filled in -->
