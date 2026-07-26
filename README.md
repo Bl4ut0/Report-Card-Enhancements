@@ -39,41 +39,37 @@ Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Lo
 
 ## Deployment & Self-Hosting Options
 
-The proxy stack supports two primary deployment pathways depending on your infrastructure preference:
+The proxy stack supports two primary deployment pathways depending on your technical preferences:
 
-> [!IMPORTANT]
-> **Cloudflare Workers vs. Self-Hosted Docker**:
-> Cloudflare Workers run on a collectively shared pool of edge IP addresses. Just like Google Apps Script servers, heavily used shared IPs can still occasionally run into rate-limiting from upstream APIs during peak traffic.
-> **Self-hosting the node yourself in Docker on a dedicated IP (VPS or home server)** is the best way to guarantee you never hit shared IP rate-limiting. You just need to secure the node with a reverse proxy (such as Caddy, Nginx Proxy Manager / NPMPlus, or Cloudflare Tunnel).
-
-### Option 1: Cloudflare Worker (1-Click Edge Deploy)
-For a serverless setup requiring zero server maintenance, deploy directly to Cloudflare's edge network:
+### Option 1: Cloudflare Worker (1-Click Edge Deploy - Recommended for Most Users)
+For users who do **not** want to deal with port forwarding, reverse proxies, SSL certificates, or server management, a Cloudflare Worker is the easiest and best option:
 - **Repo & Deploy**: [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy)
 - **Features**: Handles WCL API requests and Discord webhooks with dynamic caching and stale-on-error fallbacks.
 - **Deployment**: 1-click GitHub Actions auto-deploy or CLI deployment via `deploy.js` / `npx wrangler deploy`.
+- **IP Note**: Cloudflare Workers run on a collectively shared pool of edge IPs. While far more resilient than direct Apps Script calls, heavily used shared IPs can still occasionally hit rate limits during peak global traffic.
 
 ### Option 2: Self-Hosted Docker Container (`bl4ut0/rce-proxy:latest`)
-For users who prefer running on dedicated VPS hardware or a local home server/NAS, pre-packaged Docker Compose setups are located in [Self-Hosted Proxy/](Self-Hosted%20Proxy/):
+For advanced users who want to run the proxy on an unshared dedicated IP (to completely guarantee zero shared-IP rate limiting) and are comfortable securing a node:
 
-1. **VPS Deployment with Automatic SSL (Caddy)**:
-   - Uses [Self-Hosted Proxy/docker-compose.vps.yml](Self-Hosted%20Proxy/docker-compose.vps.yml) to spin up the proxy container alongside Caddy for automatic Let's Encrypt SSL management.
-   - **Setup**:
-     ```bash
-     cd "Self-Hosted Proxy"
-     cp .env.example .env
-     # Set DOMAIN=proxy.yourdomain.com and secrets in .env
-     docker compose -f docker-compose.vps.yml up -d
-     ```
-
-2. **Local Home-Server / NAS Deployment (NPMPlus & Worker Relay)**:
-   - Uses [Self-Hosted Proxy/docker-compose.yml](Self-Hosted%20Proxy/docker-compose.yml) to run the proxy container locally on port `4040`.
-   - Easily pairs with local reverse proxies (Nginx Proxy Manager, NPMPlus, Traefik) or a Cloudflare Worker relay (`BACKEND_URL`) to mask your home external IP address.
+1. **Local Home-Server / NAS Deployment (`docker-compose.yml`)**:
+   - Runs the proxy container locally on port `4040`.
+   - Designed to sit behind your existing reverse proxy (Nginx Proxy Manager / NPMPlus, Traefik), a Cloudflare Tunnel, or a Cloudflare Worker relay (`BACKEND_URL`).
    - **Setup**:
      ```bash
      cd "Self-Hosted Proxy"
      cp .env.example .env
      # Set WCL_PROXY_SECRET and DISCORD_PROXY_SECRET in .env
      docker compose up -d
+     ```
+
+2. **VPS Deployment with Automatic SSL (`docker-compose.vps.yml`)**:
+   - Includes a Caddy sidecar container to handle automatic Let's Encrypt SSL/TLS certificates on a public Linux VPS.
+   - **Setup**:
+     ```bash
+     cd "Self-Hosted Proxy"
+     cp .env.example .env
+     # Set DOMAIN=proxy.yourdomain.com and secrets in .env
+     docker compose -f docker-compose.vps.yml up -d
      ```
 
 3. **Container Health & Stats Verification**:
