@@ -8,6 +8,10 @@ Both the public VPS track and the home-hosted local proxy track run using the sa
 
 ## 📦 Deployment Options
 
+> [!NOTE]
+> **Why Self-Host?**
+> Cloudflare Workers run on a collectively shared pool of IP addresses, meaning heavy global usage can still occasionally risk upstream rate limits (similar to Google Apps Script shared IPs). **Self-hosting this container on your own dedicated IP (VPS or home server)** is the best way to guarantee zero shared IP rate limits from WCL or Discord. Make sure to secure your node using a reverse proxy (Caddy, NPMPlus) or Cloudflare Tunnel.
+
 Select the deployment model that best fits your environment:
 
 ### Option A: Public VPS Deployment (with Caddy & SSL)

@@ -41,6 +41,11 @@ Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Lo
 
 The proxy stack supports two primary deployment pathways depending on your infrastructure preference:
 
+> [!IMPORTANT]
+> **Cloudflare Workers vs. Self-Hosted Docker**:
+> Cloudflare Workers run on a collectively shared pool of edge IP addresses. Just like Google Apps Script servers, heavily used shared IPs can still occasionally run into rate-limiting from upstream APIs during peak traffic.
+> **Self-hosting the node yourself in Docker on a dedicated IP (VPS or home server)** is the best way to guarantee you never hit shared IP rate-limiting. You just need to secure the node with a reverse proxy (such as Caddy, Nginx Proxy Manager / NPMPlus, or Cloudflare Tunnel).
+
 ### Option 1: Cloudflare Worker (1-Click Edge Deploy)
 For a serverless setup requiring zero server maintenance, deploy directly to Cloudflare's edge network:
 - **Repo & Deploy**: [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy)
