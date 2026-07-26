@@ -47,19 +47,19 @@ Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Lo
 ## Development Status & Roadmap
 
 > [!NOTE]
-> The core integration layers—including the V2 GraphQL compatibility wrapper, client-side rate-limit pacing, and the consolidated Cloudflare Worker proxy—are fully implemented, verified, and complete for TBC `v1.6.0a`.
+> Core infrastructure development is complete! The V2 GraphQL Proxy, Discord Webhook Relay, WCL Worker Relays, Cloudflare Worker deployment script, and Self-Hosted Docker system are all fully operational and available.
 
-### Active Work
-1. **End-to-End n8n Pipeline Validation**:
-   - The Apps Script automation patches (`CLA_Patch_n8n.gs`, `RPB_Patch_n8n.gs`) are scaffolded but the full pipeline sequence (intake → queue → locks → CLA → RPB) has not yet been verified end-to-end under real production conditions.
+### Active Focus & Next Steps
+1. **n8n Automations**: Full pipeline validation and refinement for Apps Script & n8n orchestration (intake → queue → locks → CLA → RPB).
+2. **Game Era Expansion**: Updating and testing replacement sets for additional Warcraft game versions (Vanilla, Season of Discovery, WotLK, MoP).
 
 ### Development Roadmap
 - [x] **Phase 1: Complete V2 GraphQL Adapters**: Implement event and table GraphQL query fetches and write adaptation functions to match the shapes expected by the sheet logic.
-- [x] **Phase 2: Combined Proxy Testing & Mirroring**: Validate, test, and consolidate the Discord + WCL proxy ([RCE-Proxy/worker.js](RCE-Proxy/worker.js)) and mirror it to the standalone deploy repo [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy) for 1-click deployment.
-- [x] **Phase 3: TBC v1.6.0a End-to-End Proof of Concept**: Apply the replacement sets for TBC CLA and RPB v1.6.0a and verify full compatibility and output parity with live Warcraft Logs V1/V2 endpoints.
-- [x] **Phase 4: Client-Side Request Pacing**: Implement rate-limit pacing directly in `WCL_Compat.gs` to enforce safe fetch intervals, avoiding Worker-side queuing to prevent CPU duration limits.
-- [ ] **Phase 5: Expand Era Coverage**: Port replacement sets to other game eras (Vanilla, Season of Discovery, WotLK, MoP).
-- [ ] **Phase 6: n8n Production Validation**: Run end-to-end verification of the full automation pipeline under real production load.
+- [x] **Phase 2: Consolidated Proxy & Relays**: Build, test, and consolidate the V2 WCL API proxy and Discord webhook relay ([RCE-Proxy/worker.js](RCE-Proxy/worker.js)) with automated deployment script (`deploy.js`) and 1-click GitHub mirror ([Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy)).
+- [x] **Phase 3: Self-Hosted Docker System**: Deliver production-ready Docker Compose setups ([Self-Hosted Proxy/](Self-Hosted%20Proxy/)) for VPS (Caddy auto-HTTPS) and local home servers.
+- [x] **Phase 4: TBC v1.6.0a End-to-End & Request Pacing**: Apply replacement sets for TBC CLA and RPB v1.6.0a with client-side rate-limit pacing (`WCL_Compat.gs`) to ensure safe fetch intervals and output parity.
+- [ ] **Phase 5: n8n Automations & Pipeline Validation**: Run end-to-end verification and refinement of the full n8n automation pipeline under production load.
+- [ ] **Phase 6: Expand Game Version Support**: Update and verify replacement sets across other game eras (Vanilla, Season of Discovery, WotLK, MoP, Cataclysm).
 
 ## Credits
 
