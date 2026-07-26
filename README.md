@@ -37,6 +37,46 @@ Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Lo
 | **Developer migration handoff** | [V2 Wrapper/docs/MIGRATION_NOTES.md](V2%20Wrapper/docs/MIGRATION_NOTES.md) |
 | **n8n automation patches** | [n8n Automations/README.md](n8n%20Automations/README.md) |
 
+## Deployment & Self-Hosting Options
+
+The proxy stack supports two primary deployment pathways depending on your infrastructure preference:
+
+### Option 1: Cloudflare Worker (1-Click Edge Deploy)
+For a serverless setup requiring zero server maintenance, deploy directly to Cloudflare's edge network:
+- **Repo & Deploy**: [Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy)
+- **Features**: Handles WCL API requests and Discord webhooks with dynamic caching and stale-on-error fallbacks.
+- **Deployment**: 1-click GitHub Actions auto-deploy or CLI deployment via `deploy.js` / `npx wrangler deploy`.
+
+### Option 2: Self-Hosted Docker Container (`bl4ut0/rce-proxy:latest`)
+For users who prefer running on dedicated VPS hardware or a local home server/NAS, pre-packaged Docker Compose setups are located in [Self-Hosted Proxy/](Self-Hosted%20Proxy/):
+
+1. **VPS Deployment with Automatic SSL (Caddy)**:
+   - Uses [Self-Hosted Proxy/docker-compose.vps.yml](Self-Hosted%20Proxy/docker-compose.vps.yml) to spin up the proxy container alongside Caddy for automatic Let's Encrypt SSL management.
+   - **Setup**:
+     ```bash
+     cd "Self-Hosted Proxy"
+     cp .env.example .env
+     # Set DOMAIN=proxy.yourdomain.com and secrets in .env
+     docker compose -f docker-compose.vps.yml up -d
+     ```
+
+2. **Local Home-Server / NAS Deployment (NPMPlus & Worker Relay)**:
+   - Uses [Self-Hosted Proxy/docker-compose.yml](Self-Hosted%20Proxy/docker-compose.yml) to run the proxy container locally on port `4040`.
+   - Easily pairs with local reverse proxies (Nginx Proxy Manager, NPMPlus, Traefik) or a Cloudflare Worker relay (`BACKEND_URL`) to mask your home external IP address.
+   - **Setup**:
+     ```bash
+     cd "Self-Hosted Proxy"
+     cp .env.example .env
+     # Set WCL_PROXY_SECRET and DISCORD_PROXY_SECRET in .env
+     docker compose up -d
+     ```
+
+3. **Container Health & Stats Verification**:
+   - Query container health and active request queue metrics anytime:
+     ```bash
+     curl http://localhost:4040/healthz
+     ```
+
 ## Important Boundaries
 
 - **Upstream Separation**: CLA and RPB remain separate upstream tools, Google Sheets, and Apps Script projects. Automation combines them into a single runtime "expansion lane" containing the CLA/RPB sheet pair, Web App URLs, queue, and WarcraftLogs API budget.
