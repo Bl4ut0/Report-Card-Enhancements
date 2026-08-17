@@ -33,7 +33,7 @@
  *     function names. Use the Apps Script "Select function" dropdown to verify.
  *
  * Uploaded to: Combat Log Analytics Apps Script project
- * Version: 0.3.1
+ * Version: 0.4.0
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -54,18 +54,18 @@
 var CLA_ACTION_MAP_ = {
   // ── Individual passes (match the sheet's enable/disable checkboxes) ────────
   // These generate the individual tab sheets and must all complete before export.
-  'runFights':      'runFightsOnly',      // ⚠️ VERIFY — sheet tab: "fights"
-  'runGearIssues':  'runGearIssues',      // ⚠️ VERIFY — sheet tab: "gear issues"
-  'runGearListing': 'runGearListing',     // ⚠️ VERIFY — sheet tab: "gear listing"
-  'runConsumables': 'runConsumablesPass', // ⚠️ VERIFY — sheet tab: "buff consumables"
-  'runDrums':       'runDrumsPass',       // ⚠️ VERIFY — sheet tab: "drums"
-  'runSR':          'runSRPass',          // ⚠️ VERIFY — sheet tab: "shadow resi"
-  'validate':       'validateSheetState', // ⚠️ VERIFY — sheet tab: "validate"
+  'runFights':      populateFights,
+  'runGearIssues':  populateGearIssues,
+  'runGearListing': populateGearBreakdown,
+  'runConsumables': populateBuffConsumables,
+  'runDrums':       populateDrumsEffectiveness,
+  'runSR':          populateShadowResistance,
+  'validate':       populateValidate,
 
   // ── Final step — ALWAYS runs last after all individual passes ──────────────
   // This is the compile/export step. It must never appear in options.passes.
   // runPasses automatically appends this after all enabled passes complete.
-  'runCLA':         'runFullCLA',         // ⚠️ VERIFY — final export/compile function
+  'runCLA':         exportSheets,
 };
 
 /**
@@ -82,7 +82,7 @@ var CLA_PASS_ENABLED_ = {
   'runGearListing': true,  // sheet tab: "gear listing"
   'runConsumables': true,  // sheet tab: "buff consumables"
   'runDrums':       true,  // sheet tab: "drums"
-  'runSR':          false, // sheet tab: "shadow resi"  — set true to enable
+  'runSR':          true,  // sheet tab: "shadow resi"
   'validate':       false, // sheet tab: "validate"     — set true to enable
 };
 
@@ -154,6 +154,8 @@ function doPost(e) {
 
   var action = body.action;
   var callbackUrl = body.callbackUrl || null;
+  var correlationId = body.correlationId || null;
+  var requestedReportId = body.reportId || null;
   var options = body.options || {};
 
   // ── Status check ──
@@ -184,6 +186,10 @@ function doPost(e) {
       var lockTime = lockProps.getProperty(CLA_LOCK_TIME_);
       var lockAgeMin = lockTime ? (new Date() - new Date(lockTime)) / 60000 : 0;
       if (lockAgeMin < CLA_LOCK_TTL_MIN_) {
+        if (lockProps.getProperty(CLA_REPORT_PROP_) === reportId) {
+          lockProps.setProperty(CLA_LOCK_TIME_, new Date().toISOString());
+          return jsonResponse_({ status: 'ok', message: 'Existing CLA lock resumed for the same report.', reportId: reportId, resumed: true, project: 'CLA' });
+        }
         return jsonResponse_({
           error: 'Busy',
           message: 'A CLA run is already in progress. Wait for it to complete before queuing a new report.',
@@ -223,16 +229,12 @@ function doPost(e) {
 
   // ── Multi-pass mode — runs a selected subset, like the sheet's START EXPORT ──
   if (action === 'runPasses') {
-    var acceptedMulti = jsonResponse_({
-      status: 'accepted',
-      action: 'runPasses',
-      project: 'CLA',
-      passes: options.passes || CLA_DEFAULT_PASSES_,
-      timestamp: startTime.toISOString(),
-    });
     var multiResult = executePassList_(options, startTime);
+    multiResult.reportId = requestedReportId || PropertiesService.getScriptProperties().getProperty(CLA_REPORT_PROP_) || null;
+    multiResult.correlationId = correlationId;
+    multiResult.callbackStage = 'CLA_COMPLETE';
     if (callbackUrl) fireCallback_(callbackUrl, multiResult);
-    return acceptedMulti;
+    return jsonResponse_(multiResult);
   }
 
   // ── Single pass mode ──
@@ -244,39 +246,29 @@ function doPost(e) {
     }, 400);
   }
 
-  var acceptedSingle = jsonResponse_({
-    status: 'accepted',
-    action: action,
-    project: 'CLA',
-    timestamp: startTime.toISOString(),
-  });
-
   var result = executeAction_(action, options, startTime);
+  result.reportId = requestedReportId || PropertiesService.getScriptProperties().getProperty(CLA_REPORT_PROP_) || null;
+  result.correlationId = correlationId;
+  result.callbackStage = 'CLA_ACTION_COMPLETE';
+  if (action === CLA_FINAL_STEP_ && result.status === 'complete') releaseLock_('CLA');
   if (callbackUrl) fireCallback_(callbackUrl, result);
-  return acceptedSingle;
+  return jsonResponse_(result);
 }
 
 /**
  * Web App GET entry point — health/status check.
- * Visit this URL in a browser after deployment to verify the patch is live
- * and confirm which spreadsheet it is bound to.
+ * Returns only a minimal public health response. Use the authenticated
+ * `status` POST action for spreadsheet and lock details.
  *
  * @param {Object} e - Apps Script event object
  * @return {ContentService.TextOutput} JSON response
  */
 function doGet(e) {
-  var ss = SpreadsheetApp.getActive();
   return jsonResponse_({
     status: 'ok',
     project: 'CLA',
-    version: '0.3.1',
-    spreadsheetId: ss ? ss.getId() : 'NOT BOUND',
-    spreadsheetName: ss ? ss.getName() : 'NOT BOUND',
-    message: 'CLA n8n patch is deployed. POST to trigger passes.',
-    availableActions: Object.keys(CLA_ACTION_MAP_).concat(['runPasses', 'status']),
-    defaultPassOrder: CLA_DEFAULT_PASSES_,
-    suppressCoreDiscordDefault: CLA_SUPPRESS_CORE_DISCORD_DEFAULT_,
-    timestamp: new Date().toISOString(),
+    version: '0.4.0',
+    message: 'CLA automation adapter is available. Authenticated POST is required for actions.',
   });
 }
 
@@ -391,7 +383,8 @@ function executePassList_(options, startTime) {
  * @return {Object} Result payload
  */
 function executeAction_(action, options, startTime) {
-  var fnName = CLA_ACTION_MAP_[action];
+  var fn = CLA_ACTION_MAP_[action];
+  var fnName = fn && fn.name ? fn.name : action;
   var result = {
     action: action,
     project: 'CLA',
@@ -413,14 +406,15 @@ function executeAction_(action, options, startTime) {
   verboseLog_('[CLA_Patch] Executing: ' + action + ' → ' + fnName);
 
   try {
-    if (typeof this[fnName] === 'function') {
+    activateSheetForAction_(action);
+    if (typeof fn === 'function') {
       if (shouldSuppressCoreDiscord_(action, options)) {
         runWithCoreDiscordMuted_(function() {
-          this[fnName](options);
-        }.bind(this));
+          fn(options);
+        });
         result.coreDiscordSuppressed = true;
       } else {
-        this[fnName](options);
+        fn(options);
       }
       result.status = 'complete';
     } else {
@@ -442,6 +436,29 @@ function executeAction_(action, options, startTime) {
   result.duration_ms = new Date() - startTime;
   verboseLog_('[CLA_Patch] Done: ' + action + ' in ' + result.duration_ms + 'ms | ' + result.status);
   return result;
+}
+
+function activateSheetForAction_(action) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error('CLA spreadsheet context is unavailable');
+  var patterns = {
+    runFights: [/fight/i], runGearIssues: [/gear.*issue/i],
+    runGearListing: [/gear.*list/i, /gear.*breakdown/i],
+    runConsumables: [/consumable/i, /buff/i], runDrums: [/drum/i],
+    runSR: [/shadow.*resi/i], validate: [/validate/i], runCLA: [/^instructions$/i]
+  };
+  var candidates = patterns[action] || [];
+  var sheets = ss.getSheets();
+  for (var i = 0; i < candidates.length; i++) {
+    for (var j = 0; j < sheets.length; j++) {
+      if (candidates[i].test(sheets[j].getName())) {
+        ss.setActiveSheet(sheets[j]);
+        SpreadsheetApp.flush();
+        return;
+      }
+    }
+  }
+  throw new Error('No CLA sheet tab matched action ' + action);
 }
 
 /**
@@ -534,6 +551,9 @@ function fireCallback_(callbackUrl, result) {
 
   if (hasStructuredError) {
     result.errorPayload.duration_ms = result.duration_ms;
+    result.errorPayload.reportId = result.reportId || null;
+    result.errorPayload.correlationId = result.correlationId || null;
+    result.errorPayload.callbackStage = result.callbackStage || 'CLA_ACTION_COMPLETE';
     reportErrorToN8n_(callbackUrl, result.errorPayload);
   } else {
     try {

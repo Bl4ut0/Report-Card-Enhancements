@@ -10,6 +10,15 @@ Original Code/
 Current Source/
 tests/results/
 
+## Private RCE portal (contains Discord OAuth configuration)
+rce-portal-private/
+
+## Local n8n configuration and generated workflow exports
+n8n Automations/config.local.json
+n8n Automations/dist/
+n8n Automations/*.private.json
+Portal Template/config.php
+
 ## Tool caches and dependencies
 .wrangler/
 node_modules/
@@ -17,4 +26,3 @@ node_modules/
 ## Logs
 *.log
 npm-debug.log*
-

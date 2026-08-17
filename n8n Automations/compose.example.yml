@@ -6,8 +6,8 @@ services:
     ports:
       - "5678:5678"
     environment:
-      GENERIC_TIMEZONE: America/Toronto
-      TZ: America/Toronto
+      GENERIC_TIMEZONE: Etc/UTC
+      TZ: Etc/UTC
       NODE_ENV: production
       N8N_HOST: n8n.example.com
       N8N_PROTOCOL: https

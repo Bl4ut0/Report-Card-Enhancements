@@ -2,7 +2,37 @@
 
 Automation patches are pre-1.0. Version numbers describe iteration state, not a stable public API.
 
-## [0.3.1] - Unreleased
+## [0.4.0] - 2026-08-17
+
+### Added
+
+- Scrubbed 33-node unified n8n workflow template.
+- Configuration generator and optional REST import/update helper.
+- Committed `rce_reports` Data Table schema.
+- Automatic Warcraft Logs monitoring with live/stabilizing classification.
+- Authenticated manual intake branch feeding the same ledger.
+- Per-action CLA and RPB checkpoints with correlation-validated callbacks.
+- Ten-minute checkpoint leases and watchdog recovery of only the failed stage.
+- Completed-report and protected-state deduplication.
+- Architecture, installation, operations, portal integration, and security documentation.
+- Public-package validator and workflow-export scrubber.
+
+### Changed
+
+- CLA action map now calls the verified TBC functions directly and activates the matching sheet tab before execution.
+- RPB action map now calls `generateAllSheet` followed by `generateRoleSheets` from the `All` tab.
+- Repeated `setReportId` calls resume the same report lock instead of returning busy.
+- Apps Script responses and callbacks now include report and correlation identifiers.
+- Final successful export releases the project-local Apps Script lock.
+- Public Apps Script GET responses no longer disclose spreadsheet identity or available actions.
+- Example compose timezone is installation-neutral.
+
+### Privacy
+
+- Removed all live workflow, Data Table, credential, guild, report, domain, and Apps Script deployment identifiers from the committed workflow.
+- Kept private portal and hosting/deployment tooling outside the repository.
+
+## [0.3.1] - 2026-08-16
 
 ### Documentation
 

@@ -39,7 +39,7 @@ Patch files live one level up in `../` and are uploaded into the target Google A
 | Field | Value |
 |---|---|
 | Target | CLA Apps Script project |
-| Version | 0.3.1 |
+| Version | 0.4.0 |
 | Purpose | Exposes CLA actions as an n8n-callable Web App. |
 | Required files | `Shared_Config.gs` |
 | Required properties | `N8N_SECRET` |
@@ -56,21 +56,21 @@ Available actions:
 | `setReportId` | built in | Writes the WarcraftLogs report ID and acquires the run lock. |
 | `status` | built in | Returns spreadsheet binding and lock state. |
 | `runPasses` | built in | Runs enabled passes, then the final export step. |
-| `runFights` | `runFightsOnly` | Fight metadata pass. Disabled by default in the current patch toggles. |
-| `runGearIssues` | `runGearIssues` | Gear issue pass. |
-| `runGearListing` | `runGearListing` | Gear listing pass. |
-| `runConsumables` | `runConsumablesPass` | Consumables pass. |
-| `runDrums` | `runDrumsPass` | Drums pass. |
-| `runSR` | `runSRPass` | Shadow resistance pass. Disabled by default in the current patch toggles. |
-| `validate` | `validateSheetState` | Validation pass. Disabled by default in the current patch toggles. |
-| `runCLA` | `runFullCLA` | Final compile/export step. Auto-appended by `runPasses`. |
+| `runFights` | `populateFights` | Fight metadata pass. Disabled by default in the current patch toggles. |
+| `runGearIssues` | `populateGearIssues` | Gear issue pass. |
+| `runGearListing` | `populateGearBreakdown` | Gear listing/breakdown pass. |
+| `runConsumables` | `populateBuffConsumables` | Consumables pass. |
+| `runDrums` | `populateDrumsEffectiveness` | Drums pass. |
+| `runSR` | `populateShadowResistance` | Shadow resistance pass. Enabled in the current TBC map. |
+| `validate` | `populateValidate` | Validation pass. Disabled by default in the current patch toggles. |
+| `runCLA` | `exportSheets` | Final compile/export step. |
 
 ### `../RPB_Patch_n8n.gs`
 
 | Field | Value |
 |---|---|
 | Target | RPB Apps Script project |
-| Version | 0.2.0 |
+| Version | 0.3.0 |
 | Purpose | Exposes RPB actions as an n8n-callable Web App. |
 | Required files | `Shared_Config.gs` |
 | Required properties | `N8N_SECRET` |
@@ -104,9 +104,9 @@ After deploying a Web App, visit the deployment URL with a browser. A healthy GE
 ```json
 {
   "status": "ok",
-  "spreadsheetId": "1abc123...",
-  "availableActions": ["..."]
+  "project": "CLA",
+  "version": "0.4.0"
 }
 ```
 
-If `spreadsheetId` is `NOT BOUND`, the deployment came from a standalone Apps Script project instead of the sheet-bound CLA/RPB project.
+The public GET response deliberately omits spreadsheet identity and action details. Use the authenticated `status` POST action to verify the spreadsheet binding and lock state.

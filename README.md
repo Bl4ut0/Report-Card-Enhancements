@@ -11,6 +11,7 @@ Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Lo
 | `V2 Wrapper/` | Warcraft Logs V1→V2 GraphQL compatibility layer and version-specific replacement sets. |
 | `RCE Replacements/` | Generated deployment-ready output files (`.gs` replacements and unified `wrapper.gs`). |
 | `n8n Automations/` | Apps Script automation patches and n8n compose setup docs. |
+| `Portal Template/` | Optional deployment-neutral Discord OAuth and role-gated manual intake portal. |
 | `tests/` | V1 ↔ V2 API comparison suite, RPB query verification, and Excel comparison tools. See [TESTING_GUIDE.md](Docs/TESTING_GUIDE.md). |
 | `Docs/` | Architecture, setup notes, design framework, and troubleshooting. |
 | `Discord Proxy/` | Discord webhook relay docs (standalone code consolidated into `RCE-Proxy/`). |
@@ -35,7 +36,8 @@ Helper scripts, Cloudflare Worker and self-hosted VPS proxy support, Warcraft Lo
 | **Testing & verification** | [Docs/TESTING_GUIDE.md](Docs/TESTING_GUIDE.md) |
 | **V2 Wrapper migration** | [V2 Wrapper/README.md](V2%20Wrapper/README.md) |
 | **Developer migration handoff** | [V2 Wrapper/docs/MIGRATION_NOTES.md](V2%20Wrapper/docs/MIGRATION_NOTES.md) |
-| **n8n automation patches** | [n8n Automations/README.md](n8n%20Automations/README.md) |
+| **n8n automation, import template, and operations** | [n8n Automations/README.md](n8n%20Automations/README.md) |
+| **Optional Discord OAuth guild portal template** | [Portal Template/README.md](Portal%20Template/README.md) |
 
 ## Deployment & Self-Hosting Options
 
@@ -91,7 +93,7 @@ For advanced users who want to run the proxy on an unshared dedicated IP (to com
 > Core infrastructure development is complete! The V2 GraphQL Proxy, Discord Webhook Relay, WCL Worker Relays, Cloudflare Worker deployment script, and Self-Hosted Docker system are all fully operational and available.
 
 ### Active Focus & Next Steps
-1. **n8n Automations**: Full pipeline validation and refinement for Apps Script & n8n orchestration (intake → queue → locks → CLA → RPB).
+1. **Automation Hardening**: Signed callbacks, atomic dispatcher locking, intake validation, and expanded operational alerts.
 2. **Game Era Expansion**: Updating and testing replacement sets for additional Warcraft game versions (Vanilla, Season of Discovery, WotLK, MoP).
 
 ### Development Roadmap
@@ -99,7 +101,7 @@ For advanced users who want to run the proxy on an unshared dedicated IP (to com
 - [x] **Phase 2: Consolidated Proxy & Relays**: Build, test, and consolidate the V2 WCL API proxy and Discord webhook relay ([RCE-Proxy/worker.js](RCE-Proxy/worker.js)) with automated deployment script (`deploy.js`) and 1-click GitHub mirror ([Bl4ut0/RCE-Proxy](https://github.com/Bl4ut0/RCE-Proxy)).
 - [x] **Phase 3: Self-Hosted Docker System**: Deliver production-ready Docker Compose setups ([Self-Hosted Proxy/](Self-Hosted%20Proxy/)) for VPS (Caddy auto-HTTPS) and local home servers.
 - [x] **Phase 4: TBC v1.6.0a End-to-End & Request Pacing**: Apply replacement sets for TBC CLA and RPB v1.6.0a with client-side rate-limit pacing (`WCL_Compat.gs`) to ensure safe fetch intervals and output parity.
-- [ ] **Phase 5: n8n Automations & Pipeline Validation**: Run end-to-end verification and refinement of the full n8n automation pipeline under production load.
+- [x] **Phase 5: n8n Automations & Pipeline Validation**: Unified monitor/manual intake, checkpointed CLA → RPB queue, deduplication, timeout recovery, scrubbed import template, and public operations documentation.
 - [ ] **Phase 6: Expand Game Version Support**: Update and verify replacement sets across other game eras (Vanilla, Season of Discovery, WotLK, MoP, Cataclysm).
 
 ## Credits

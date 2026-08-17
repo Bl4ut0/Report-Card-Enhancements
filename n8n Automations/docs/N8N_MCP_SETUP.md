@@ -43,14 +43,13 @@ Replace `YOUR_N8N_HOST` and `your_n8n_api_key_here`.
 
 The MCP server can list workflows that the API key can see, but detailed reads and updates require workflow-level MCP access. In n8n, enable MCP access in the workflow settings for any workflow an assistant should inspect or update.
 
-For the CRC automation cleanup, enable MCP access on:
+For optional assistant inspection, enable MCP access only on:
 
 ```text
-CRC - Report Queue
-CRC - Manual Form
+RCE - Unified Checkpointed Queue Coordinator
 ```
 
-Those workflows should then be merged or replaced by one expansion-scoped workflow where manual intake and WarcraftLogs monitoring both feed the same queue.
+Manual intake and Warcraft Logs monitoring already belong in this single workflow and feed the same ledger. MCP access is not required for normal operation or JSON import.
 
 ## Troubleshooting
 
