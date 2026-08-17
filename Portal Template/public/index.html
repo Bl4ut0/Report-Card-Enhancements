@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#170b09">
+    <meta name="description" content="Authenticated guild report intake for RCE automation.">
+    <title>RCE Guild Report Portal</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <span class="seal" aria-hidden="true">R</span>
+        <div>
+          <p class="eyebrow">Guild Operations</p>
+          <h1>Report Command</h1>
+        </div>
+      </header>
+
+      <section class="hero">
+        <p class="eyebrow">Automated report processing</p>
+        <h2>Turn battle logs into raid-ready intelligence.</h2>
+        <p>Authorized guild members can submit a Warcraft Logs report to the unified CLA and RPB queue.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="dispatch-title">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Secure access</p>
+            <h2 id="dispatch-title">Report Dispatch</h2>
+          </div>
+          <span class="status-light" aria-hidden="true"></span>
+        </div>
+
+        <div class="status-box" role="status" aria-live="polite">
+          <p id="status">Sign in with Discord to verify your guild role.</p>
+        </div>
+
+        <button id="login" class="primary" type="button">Continue with Discord</button>
+
+        <form id="report-form" hidden>
+          <label for="report-id">Warcraft Logs report ID</label>
+          <input id="report-id" name="report-id" required pattern="[A-Za-z0-9]{16}" minlength="16" maxlength="16" autocomplete="off" spellcheck="false" placeholder="AbCdEf123456GhJk">
+          <button class="primary" type="submit">Queue report</button>
+          <button id="logout" class="secondary" type="button">Sign out</button>
+        </form>
+
+        <p class="privacy">The portal requests only the Discord permissions needed to verify identity and guild membership.</p>
+      </section>
+
+      <footer>RCE Guild Systems</footer>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

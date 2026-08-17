@@ -1,0 +1,1692 @@
+{
+  "name": "__RCE_WORKFLOW_NAME__",
+  "nodes": [
+    {
+      "id": "3ad56169-f968-45f5-9b57-3c0035971115",
+      "name": "Queue and Recovery Watchdog",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        160
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "48dcf265-c9c0-491f-a5e9-88414ae8f0a9",
+      "name": "Load Queue Ledger",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        160
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "__RCE_DATA_TABLE_ID__",
+          "cachedResultName": "rce_reports"
+        },
+        "filters": {
+          "conditions": []
+        },
+        "returnAll": true
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "1fb1cf1c-35f4-42b2-b066-9b0a5574115b",
+      "name": "Select New or Expired Checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        160
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const rows=$input.all().map(i=>i.json).filter(r=>r.id&&r.report_code);\nconst now=Date.now();\nconst active=rows.filter(r=>r.state==='CLA_RUNNING'||r.state==='RPB_RUNNING').sort((a,b)=>Date.parse(a.processing_started_at||0)-Date.parse(b.processing_started_at||0))[0];\nif(active){\n  const expiry=Date.parse(active.lease_expires_at||0);\n  if(!expiry||expiry>now)return[{json:{hasWork:false,state:'WAITING',active_report:active.report_code,stage:active.stage}}];\n  return[{json:{...active,hasWork:true,recovery:true,correlation_id:String(active.correlation_id||active.execution_id||$execution.id),execution_id:String(active.correlation_id||active.execution_id||$execution.id),stage_attempt_count:Number(active.stage_attempt_count||0)+1,heartbeat_at:new Date().toISOString(),lease_expires_at:new Date(now+10*60000).toISOString(),last_error:'Checkpoint lease expired; retrying only '+active.stage}}];\n}\nconst completed=new Set(rows.filter(r=>r.state==='COMPLETE').map(r=>r.report_code));\nconst queued=rows.filter(r=>r.state==='QUEUED'&&!completed.has(r.report_code)).sort((a,b)=>Date.parse(a.queued_at||a.createdAt||0)-Date.parse(b.queued_at||b.createdAt||0));\nconst row=queued[0];\nif(!row)return[{json:{hasWork:false,state:'IDLE'}}];\nreturn[{json:{...row,hasWork:true,recovery:false,state:'CLA_RUNNING',stage:'CLA_GEAR_ISSUES',processing_started_at:new Date().toISOString(),attempt_count:Number(row.attempt_count||0)+1,stage_attempt_count:1,correlation_id:String($execution.id),execution_id:String($execution.id),heartbeat_at:new Date().toISOString(),lease_expires_at:new Date(now+10*60000).toISOString(),last_error:''}}];"
+      }
+    },
+    {
+      "id": "b6c229ad-0bc4-4d76-9f48-36f013e142ec",
+      "name": "Checkpoint Ready",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        720,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "work",
+              "leftValue": "={{ $json.hasWork }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "587da496-6f3d-481c-9d34-db0f99eb4e38",
+      "name": "Save Checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        160
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "__RCE_DATA_TABLE_ID__",
+          "cachedResultName": "rce_reports"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "report_code",
+              "condition": "eq",
+              "keyValue": "={{ $json.report_code }}"
+            }
+          ]
+        },
+        "columns": {
+          "convertFieldsToString": false,
+          "schema": [
+            {
+              "removed": false,
+              "displayName": "report_code",
+              "required": false,
+              "id": "report_code",
+              "type": "string",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "state",
+              "required": false,
+              "id": "state",
+              "type": "string",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "stage",
+              "required": false,
+              "id": "stage",
+              "type": "string",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "processing_started_at",
+              "required": false,
+              "id": "processing_started_at",
+              "type": "dateTime",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "attempt_count",
+              "required": false,
+              "id": "attempt_count",
+              "type": "number",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "stage_attempt_count",
+              "required": false,
+              "id": "stage_attempt_count",
+              "type": "number",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "correlation_id",
+              "required": false,
+              "id": "correlation_id",
+              "type": "string",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "execution_id",
+              "required": false,
+              "id": "execution_id",
+              "type": "string",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "heartbeat_at",
+              "required": false,
+              "id": "heartbeat_at",
+              "type": "dateTime",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "lease_expires_at",
+              "required": false,
+              "id": "lease_expires_at",
+              "type": "dateTime",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "callback_received_at",
+              "required": false,
+              "id": "callback_received_at",
+              "type": "dateTime",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "completed_at",
+              "required": false,
+              "id": "completed_at",
+              "type": "dateTime",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            },
+            {
+              "removed": false,
+              "displayName": "last_error",
+              "required": false,
+              "id": "last_error",
+              "type": "string",
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "matchingColumns": [],
+          "value": {},
+          "mappingMode": "autoMapInputData"
+        },
+        "options": {
+          "dryRun": false
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "f9f9b086-5dcb-4613-bc87-b8ce79d06375",
+      "name": "Prepare Checkpoint Dispatch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        160
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const r=$input.first().json;\nconst map={CLA_GEAR_ISSUES:['CLA','runGearIssues'],CLA_GEAR_LISTING:['CLA','runGearListing'],CLA_CONSUMABLES:['CLA','runConsumables'],CLA_DRUMS:['CLA','runDrums'],CLA_SHADOW_RESISTANCE:['CLA','runSR'],CLA_EXPORT:['CLA','runCLA'],RPB_ALL_DATA:['RPB','runAllSheet'],RPB_EXPORT_ROLES:['RPB','runExport']};\nconst step=map[r.stage];\nif(!step)return[{json:{...r,dispatch:false}}];\nreturn[{json:{...r,dispatch:true,project:step[0],action:step[1],callbackUrl:step[0]==='CLA'?'__RCE_PUBLIC_WEBHOOK_BASE_URL__/webhook/rce/v2/callback/cla-action':'__RCE_PUBLIC_WEBHOOK_BASE_URL__/webhook/rce/v2/callback/rpb-action'}}];"
+      }
+    },
+    {
+      "id": "547e1de0-c516-4dd5-b107-d20e189d394a",
+      "name": "Dispatch Next Action",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1440,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "dispatch",
+              "leftValue": "={{ $json.dispatch }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7d272513-82ed-45e6-afe6-e34301344591",
+      "name": "Route CLA or RPB",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1680,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "project",
+              "leftValue": "={{ $json.project }}",
+              "rightValue": "CLA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "9a376af5-a2da-4606-95f8-91c3982c1bb3",
+      "name": "CLA Ensure Report ID and Lock",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1920,
+        80
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "__RCE_CLA_WEB_APP_URL__",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { action: \"setReportId\", reportId: $json.report_code } }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "executeOnce": true,
+      "retryOnFail": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "__RCE_APPS_SCRIPT_CREDENTIAL_ID__",
+          "name": "__RCE_APPS_SCRIPT_CREDENTIAL_NAME__"
+        }
+      }
+    },
+    {
+      "id": "5161befa-3a69-4959-b893-70fca874745c",
+      "name": "Run One CLA Checkpoint",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2160,
+        80
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "__RCE_CLA_WEB_APP_URL__",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { action: $(\"Prepare Checkpoint Dispatch\").item.json.action, reportId: $(\"Prepare Checkpoint Dispatch\").item.json.report_code, correlationId: $(\"Prepare Checkpoint Dispatch\").item.json.correlation_id, callbackUrl: $(\"Prepare Checkpoint Dispatch\").item.json.callbackUrl, options: { suppressCoreDiscord: false } } }}",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "executeOnce": true,
+      "retryOnFail": false,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "__RCE_APPS_SCRIPT_CREDENTIAL_ID__",
+          "name": "__RCE_APPS_SCRIPT_CREDENTIAL_NAME__"
+        }
+      }
+    },
+    {
+      "id": "40a5c1aa-e8bb-4e93-805f-07d700a8c6a7",
+      "name": "RPB Ensure Report ID and Lock",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1920,
+        240
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "__RCE_RPB_WEB_APP_URL__",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { action: \"setReportId\", reportId: $json.report_code } }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "executeOnce": true,
+      "retryOnFail": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "__RCE_APPS_SCRIPT_CREDENTIAL_ID__",
+          "name": "__RCE_APPS_SCRIPT_CREDENTIAL_NAME__"
+        }
+      }
+    },
+    {
+      "id": "8e0ab06e-8f6a-4f4d-be91-6508d2fd7b19",
+      "name": "Run One RPB Checkpoint",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2160,
+        240
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "__RCE_RPB_WEB_APP_URL__",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { action: $(\"Prepare Checkpoint Dispatch\").item.json.action, reportId: $(\"Prepare Checkpoint Dispatch\").item.json.report_code, correlationId: $(\"Prepare Checkpoint Dispatch\").item.json.correlation_id, callbackUrl: $(\"Prepare Checkpoint Dispatch\").item.json.callbackUrl } }}",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "executeOnce": true,
+      "retryOnFail": false,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "__RCE_APPS_SCRIPT_CREDENTIAL_ID__",
+          "name": "__RCE_APPS_SCRIPT_CREDENTIAL_NAME__"
+        }
+      }
+    },
+    {
+      "id": "f101d6e3-d40f-44a8-b5f5-7e87fad4da57",
+      "name": "Checkpoint Recorded Without Dispatch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        360
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "return $input.all();"
+      }
+    },
+    {
+      "id": "964e4649-16a3-4d4e-9ca3-0586880dd638",
+      "name": "Queue Idle or Lease Held",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "return $input.all();"
+      }
+    },
+    {
+      "id": "49492a47-c2c4-4750-9309-45907dbd62a4",
+      "name": "CLA Action Callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        560
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rce/v2/callback/cla-action",
+        "responseMode": "onReceived"
+      }
+    },
+    {
+      "id": "ea18a4f6-767a-4810-bb23-6619ee86ebff",
+      "name": "Load Ledger for CLA Callback",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        560
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "__RCE_DATA_TABLE_ID__",
+          "cachedResultName": "rce_reports"
+        },
+        "filters": {
+          "conditions": []
+        },
+        "returnAll": true
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "704bead0-a7b6-4578-b99d-9c0f5a0b1b9c",
+      "name": "Validate and Advance CLA Checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        560
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const b=$('CLA Action Callback').first().json.body||$('CLA Action Callback').first().json;\nconst rows=$input.all().map(i=>i.json).filter(r=>r.id&&r.report_code===b.reportId);\nconst row=rows[0];\nif(!row)throw new Error('No ledger row for CLA callback '+b.reportId);\nif(b.project!=='CLA'||b.callbackStage!=='CLA_ACTION_COMPLETE'||!b.action||!b.correlationId)throw new Error('Invalid CLA action callback');\nif(String(row.correlation_id||row.execution_id)!==String(b.correlationId))return[{json:{hasNext:false,ignored:true,report_code:b.reportId,message:'Stale CLA callback ignored'}}];\nconst expected={CLA_GEAR_ISSUES:'runGearIssues',CLA_GEAR_LISTING:'runGearListing',CLA_CONSUMABLES:'runConsumables',CLA_DRUMS:'runDrums',CLA_SHADOW_RESISTANCE:'runSR',CLA_EXPORT:'runCLA'};\nif(expected[row.stage]!==b.action)return[{json:{hasNext:false,ignored:true,report_code:b.reportId,message:'Duplicate or out-of-order CLA callback ignored'}}];\nconst now=new Date();\nif(b.status!=='complete'&&b.status!=='skipped')return[{json:{report_code:b.reportId,correlation_id:String(b.correlationId),execution_id:String(b.correlationId),state:'CLA_RUNNING',stage:row.stage,stage_attempt_count:Number(row.stage_attempt_count||1),heartbeat_at:now.toISOString(),lease_expires_at:now.toISOString(),callback_received_at:now.toISOString(),last_error:'CLA '+b.action+' failed: '+JSON.stringify(b.errors||b.error||b),hasNext:false}}];\nconst next={runGearIssues:'CLA_GEAR_LISTING',runGearListing:'CLA_CONSUMABLES',runConsumables:'CLA_DRUMS',runDrums:'CLA_SHADOW_RESISTANCE',runSR:'CLA_EXPORT',runCLA:'RPB_ALL_DATA'}[b.action];\nreturn[{json:{report_code:b.reportId,correlation_id:String(b.correlationId),execution_id:String(b.correlationId),state:next.startsWith('RPB_')?'RPB_RUNNING':'CLA_RUNNING',stage:next,stage_attempt_count:1,heartbeat_at:now.toISOString(),lease_expires_at:new Date(now.getTime()+10*60000).toISOString(),callback_received_at:now.toISOString(),last_error:'',hasNext:true}}];"
+      }
+    },
+    {
+      "id": "28732ec9-8965-4945-abf9-52bcb87b61a5",
+      "name": "RPB Action Callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        920
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rce/v2/callback/rpb-action",
+        "responseMode": "onReceived"
+      }
+    },
+    {
+      "id": "c4d3c6ae-9eb5-4cc9-8703-0cdea6514ed2",
+      "name": "Load Ledger for RPB Callback",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        920
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "__RCE_DATA_TABLE_ID__",
+          "cachedResultName": "rce_reports"
+        },
+        "filters": {
+          "conditions": []
+        },
+        "returnAll": true
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "49b72127-3e97-497a-a6c2-fc1c3d7c6997",
+      "name": "Validate and Advance RPB Checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        920
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const b=$('RPB Action Callback').first().json.body||$('RPB Action Callback').first().json;\nconst rows=$input.all().map(i=>i.json).filter(r=>r.id&&r.report_code===b.reportId);\nconst row=rows[0];\nif(!row)throw new Error('No ledger row for RPB callback '+b.reportId);\nif(b.project!=='RPB'||b.callbackStage!=='RPB_ACTION_COMPLETE'||!b.action||!b.correlationId)throw new Error('Invalid RPB action callback');\nif(String(row.correlation_id||row.execution_id)!==String(b.correlationId))return[{json:{hasNext:false,ignored:true,report_code:b.reportId,message:'Stale RPB callback ignored'}}];\nconst expected={RPB_ALL_DATA:'runAllSheet',RPB_EXPORT_ROLES:'runExport'};\nif(expected[row.stage]!==b.action)return[{json:{hasNext:false,ignored:true,report_code:b.reportId,message:'Duplicate or out-of-order RPB callback ignored'}}];\nconst now=new Date();\nif(b.status!=='complete'&&b.status!=='skipped')return[{json:{report_code:b.reportId,correlation_id:String(b.correlationId),execution_id:String(b.correlationId),state:'RPB_RUNNING',stage:row.stage,stage_attempt_count:Number(row.stage_attempt_count||1),heartbeat_at:now.toISOString(),lease_expires_at:now.toISOString(),callback_received_at:now.toISOString(),last_error:'RPB '+b.action+' failed: '+JSON.stringify(b.errors||b.error||b),hasNext:false}}];\nconst done=b.action==='runExport';\nreturn[{json:{report_code:b.reportId,correlation_id:String(b.correlationId),execution_id:String(b.correlationId),state:done?'COMPLETE':'RPB_RUNNING',stage:done?'COMPLETE':'RPB_EXPORT_ROLES',stage_attempt_count:done?Number(row.stage_attempt_count||1):1,completed_at:done?now.toISOString():row.completed_at,heartbeat_at:now.toISOString(),lease_expires_at:done?null:new Date(now.getTime()+10*60000).toISOString(),callback_received_at:now.toISOString(),last_error:'',hasNext:!done}}];"
+      }
+    },
+    {
+      "id": "d39d9021-7491-4c66-9b0c-26e12ef4db2a",
+      "name": "Keep Only Ledger Columns",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        160
+      ],
+      "parameters": {
+        "jsCode": "const r=$input.first().json;\nconst keys=['report_code','state','stage','processing_started_at','attempt_count','stage_attempt_count','correlation_id','execution_id','heartbeat_at','lease_expires_at','callback_received_at','completed_at','last_error'];\nconst clean={};\nfor(const key of keys)if(r[key]!==undefined)clean[key]=r[key];\nreturn[{json:clean}];",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "a18c88f4-a792-44e8-933b-74dc9ca83321",
+      "name": "Monitor Warcraft Logs Every Five Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.warcraftlogs.com/api/v2/client",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { query: \"query RceGuildReports { reportData { reports(guildID: __RCE_WCL_GUILD_ID__, limit: 100, startTime: \" + (Date.now() - 604800000) + \") { data { code title startTime endTime fights { id startTime endTime encounterID } } } } }\" } }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "775eb223-dc18-4791-b4f3-eec54f5d4d49",
+      "name": "Fetch Guild Reports from Warcraft Logs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        280,
+        1280
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "__RCE_WCL_CREDENTIAL_ID__",
+          "name": "__RCE_WCL_CREDENTIAL_NAME__"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "__RCE_DATA_TABLE_ID__",
+          "cachedResultName": "rce_reports"
+        },
+        "filters": {
+          "conditions": []
+        },
+        "returnAll": true
+      },
+      "id": "893c7b79-b709-4e35-a77a-e384e167581e",
+      "name": "Load Ledger for Warcraft Logs Monitor",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        560,
+        1280
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $('Fetch Guild Reports from Warcraft Logs').first().json || {};\nif ((response.statusCode || 200) >= 400) throw new Error('Warcraft Logs HTTP ' + response.statusCode);\nconst payload = response.body || response;\nif (payload.errors?.length) throw new Error('Warcraft Logs GraphQL: ' + payload.errors.map(e => e.message).join('; '));\nconst reports = payload.data?.reportData?.reports?.data || [];\nconst ledgerRows = $input.all().map(i => i.json).filter(r => r.report_code);\nconst ledger = new Map(ledgerRows.map(r => [r.report_code, r]));\nconst nowMs = Date.now(), now = new Date(nowMs).toISOString();\nconst stableMs = 15 * 60 * 1000, liveDeadlineMs = 4 * 60 * 60 * 1000;\nconst protectedStates = new Set(['QUEUED','CLA_RUNNING','RPB_RUNNING','COMPLETE']);\nconst output=[];\nfor (const report of reports) {\n  if (!report.code) continue;\n  const prior=ledger.get(report.code)||{}; if (prior.state==='COMPLETE') continue;\n  const fights=Array.isArray(report.fights)?report.fights:[];\n  const fightCount=fights.length;\n  const combatDuration=fights.reduce((sum,f)=>sum+Math.max(0,Number(f.endTime||0)-Number(f.startTime||0)),0);\n  const endMs=Number(report.endTime), startMs=Number(report.startTime);\n  const changed=prior.report_end_at ? Date.parse(prior.report_end_at)!==endMs : false;\n  const firstSeen=prior.first_seen_at||now;\n  const reportLooksLive=nowMs-endMs<stableMs;\n  const liveObserved=Boolean(prior.live_observed||changed||reportLooksLive);\n  const lastChange=(changed||!prior.last_event_change_at)?now:prior.last_event_change_at;\n  const enoughCombat=fightCount>=1&&combatDuration>=60000;\n  let state=prior.state||'DISCOVERED', eligibleAt=prior.eligible_at||null, queuedAt=prior.queued_at||null;\n  if (!protectedStates.has(state)) {\n    if (!enoughCombat) state=reportLooksLive?'LIVE':'DISCOVERED';\n    else if (!liveObserved) { state='QUEUED'; eligibleAt=eligibleAt||now; queuedAt=queuedAt||now; }\n    else if (nowMs-Date.parse(firstSeen)>=liveDeadlineMs) { state='QUEUED'; eligibleAt=eligibleAt||now; queuedAt=queuedAt||now; }\n    else if (!changed && nowMs-Date.parse(lastChange)>=stableMs) { state='QUEUED'; eligibleAt=eligibleAt||now; queuedAt=queuedAt||now; }\n    else state=reportLooksLive||changed?'LIVE':'STABILIZING';\n  }\n  output.push({json:{report_code:report.code,expansion:prior.expansion || '__RCE_EXPANSION__',source:prior.source||'warcraftlogs-monitor',requested_by:prior.requested_by||'system',state,first_seen_at:firstSeen,last_seen_at:now,report_start_at:new Date(startMs).toISOString(),report_end_at:new Date(endMs).toISOString(),last_event_change_at:lastChange,fight_count:fightCount,combat_duration_ms:combatDuration,live_observed:liveObserved,eligible_at:eligibleAt,queued_at:queuedAt,processing_started_at:prior.processing_started_at||null,completed_at:prior.completed_at||null,attempt_count:Number(prior.attempt_count||0),last_error:prior.last_error||'',execution_id:$execution.id}});\n}\nreturn output;"
+      },
+      "id": "16329587-6ba5-4e5e-a390-d8257eb535c4",
+      "name": "Classify Live, Complete, and Eligible Reports",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        1280
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "__RCE_DATA_TABLE_ID__",
+          "cachedResultName": "rce_reports"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "report_code",
+              "keyValue": "={{ $json.report_code }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "report_code",
+              "displayName": "report_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "expansion",
+              "displayName": "expansion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "requested_by",
+              "displayName": "requested_by",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "first_seen_at",
+              "displayName": "first_seen_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_seen_at",
+              "displayName": "last_seen_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "report_start_at",
+              "displayName": "report_start_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "report_end_at",
+              "displayName": "report_end_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_event_change_at",
+              "displayName": "last_event_change_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fight_count",
+              "displayName": "fight_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "combat_duration_ms",
+              "displayName": "combat_duration_ms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "live_observed",
+              "displayName": "live_observed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "eligible_at",
+              "displayName": "eligible_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "queued_at",
+              "displayName": "queued_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processing_started_at",
+              "displayName": "processing_started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "completed_at",
+              "displayName": "completed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "attempt_count",
+              "displayName": "attempt_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_error",
+              "displayName": "last_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "dryRun": false
+        }
+      },
+      "id": "35bac551-7313-4fa8-be08-42d21b20b570",
+      "name": "Upsert Warcraft Logs Monitor Results",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1152,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rce/v2/intake",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "__RCE_INTAKE_CREDENTIAL_ID__",
+          "name": "__RCE_INTAKE_CREDENTIAL_NAME__"
+        }
+      },
+      "id": "820cf71d-164c-449e-bf42-c535038bd884",
+      "name": "Portal Report Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        1640
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "__RCE_DATA_TABLE_ID__",
+          "cachedResultName": "rce_reports"
+        },
+        "filters": {
+          "conditions": []
+        },
+        "returnAll": true
+      },
+      "id": "bcfc87a7-ee8c-42a7-aa4c-2c90802c73ef",
+      "name": "Load Ledger for Portal Intake",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        280,
+        1640
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const request = $('Portal Report Intake').first().json || {};\nconst body = request.body || {};\nconst reportCode = String(body.reportId || '').trim();\nif (!/^[A-Za-z0-9]{16}$/.test(reportCode)) throw new Error('Invalid Warcraft Logs report ID.');\nconst rows = $input.all().map(i => i.json).filter(r => r.report_code === reportCode);\nconst priority = {COMPLETE:5,RPB_RUNNING:4,CLA_RUNNING:3,QUEUED:2};\nconst prior = rows.sort((a,b)=>(priority[b.state]||0)-(priority[a.state]||0))[0] || {};\nconst protectedStates = new Set(['QUEUED','CLA_RUNNING','RPB_RUNNING','COMPLETE']);\nif (protectedStates.has(prior.state)) {\n  const stateLabel = String(prior.state).toLowerCase().replaceAll('_',' ');\n  const message = prior.state === 'COMPLETE' ? 'This report has already completed processing.' : 'This report is already ' + stateLabel + '.';\n  return [{json:{report_code:reportCode,state:prior.state,duplicate:true,should_upsert:false,message}}];\n}\nconst now = new Date().toISOString();\nreturn [{json:{\n  report_code: reportCode,\n  expansion: prior.expansion || '__RCE_EXPANSION__',\n  source: String(body.source || 'trusted-portal').slice(0,100),\n  requested_by: String(body.requestedBy || 'authorized-member').slice(0,100),\n  state: 'QUEUED',\n  first_seen_at: prior.first_seen_at || now,\n  last_seen_at: now,\n  report_start_at: prior.report_start_at || null,\n  report_end_at: prior.report_end_at || null,\n  last_event_change_at: prior.last_event_change_at || null,\n  fight_count: Number(prior.fight_count || 0),\n  combat_duration_ms: Number(prior.combat_duration_ms || 0),\n  live_observed: Boolean(prior.live_observed),\n  eligible_at: now,\n  queued_at: now,\n  processing_started_at: null,\n  completed_at: null,\n  attempt_count: Number(prior.attempt_count || 0),\n  last_error: '',\n  execution_id: $execution.id,\n  stage: 'QUEUED',\n  correlation_id: '',\n  lease_expires_at: null,\n  heartbeat_at: now,\n  callback_received_at: null,\n  stage_attempt_count: 0,\n  duplicate: false,\n  should_upsert: true,\n  message: 'Report accepted and queued.'\n}}];",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "fc03bebd-c0e3-4f7b-b8b9-5df34289380a",
+      "name": "Authorize and Prepare Portal Intake",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        1640
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "portal-upsert",
+              "leftValue": "={{ $json.should_upsert }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ]
+        }
+      },
+      "id": "87f07dc9-c4ad-4b81-abf1-719711cf16b2",
+      "name": "Portal Intake Requires Upsert",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        840,
+        1640
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst keys = ['report_code','expansion','source','requested_by','state','first_seen_at','last_seen_at','report_start_at','report_end_at','last_event_change_at','fight_count','combat_duration_ms','live_observed','eligible_at','queued_at','processing_started_at','completed_at','attempt_count','last_error','execution_id','stage','correlation_id','lease_expires_at','heartbeat_at','callback_received_at','stage_attempt_count'];\nconst clean = {};\nfor (const key of keys) if (row[key] !== undefined) clean[key] = row[key];\nreturn [{json:clean}];",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "852fb779-1d8a-4839-bdc8-8eda8bdceaff",
+      "name": "Keep Only Portal Ledger Columns",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        1560
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "__RCE_DATA_TABLE_ID__",
+          "cachedResultName": "rce_reports"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "report_code",
+              "keyValue": "={{ $json.report_code }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "report_code",
+              "displayName": "report_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "expansion",
+              "displayName": "expansion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "requested_by",
+              "displayName": "requested_by",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "first_seen_at",
+              "displayName": "first_seen_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_seen_at",
+              "displayName": "last_seen_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "report_start_at",
+              "displayName": "report_start_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "report_end_at",
+              "displayName": "report_end_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_event_change_at",
+              "displayName": "last_event_change_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fight_count",
+              "displayName": "fight_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "combat_duration_ms",
+              "displayName": "combat_duration_ms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "live_observed",
+              "displayName": "live_observed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "eligible_at",
+              "displayName": "eligible_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "queued_at",
+              "displayName": "queued_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processing_started_at",
+              "displayName": "processing_started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "completed_at",
+              "displayName": "completed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "attempt_count",
+              "displayName": "attempt_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_error",
+              "displayName": "last_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "dryRun": false
+        }
+      },
+      "id": "c6c7448b-1814-4711-8ce5-f6e0bcd0545f",
+      "name": "Upsert Portal Intake Report",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        1560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $('Authorize and Prepare Portal Intake').first().json;\nreturn [{json:{ok:true,reportId:prepared.report_code,state:prepared.state,duplicate:Boolean(prepared.duplicate),message:prepared.message}}];",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "5520199f-5ff1-4be2-8611-20a82215a83b",
+      "name": "Return Portal Intake Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        1640
+      ]
+    }
+  ],
+  "connections": {
+    "Queue and Recovery Watchdog": {
+      "main": [
+        [
+          {
+            "node": "Load Queue Ledger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Queue Ledger": {
+      "main": [
+        [
+          {
+            "node": "Select New or Expired Checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select New or Expired Checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Checkpoint Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkpoint Ready": {
+      "main": [
+        [
+          {
+            "node": "Keep Only Ledger Columns",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Queue Idle or Lease Held",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Prepare Checkpoint Dispatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Checkpoint Dispatch": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Next Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dispatch Next Action": {
+      "main": [
+        [
+          {
+            "node": "Route CLA or RPB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Checkpoint Recorded Without Dispatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route CLA or RPB": {
+      "main": [
+        [
+          {
+            "node": "CLA Ensure Report ID and Lock",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RPB Ensure Report ID and Lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CLA Ensure Report ID and Lock": {
+      "main": [
+        [
+          {
+            "node": "Run One CLA Checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPB Ensure Report ID and Lock": {
+      "main": [
+        [
+          {
+            "node": "Run One RPB Checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CLA Action Callback": {
+      "main": [
+        [
+          {
+            "node": "Load Ledger for CLA Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Ledger for CLA Callback": {
+      "main": [
+        [
+          {
+            "node": "Validate and Advance CLA Checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and Advance CLA Checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Keep Only Ledger Columns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPB Action Callback": {
+      "main": [
+        [
+          {
+            "node": "Load Ledger for RPB Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Ledger for RPB Callback": {
+      "main": [
+        [
+          {
+            "node": "Validate and Advance RPB Checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and Advance RPB Checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Keep Only Ledger Columns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Only Ledger Columns": {
+      "main": [
+        [
+          {
+            "node": "Save Checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monitor Warcraft Logs Every Five Minutes": {
+      "main": [
+        [
+          {
+            "node": "Fetch Guild Reports from Warcraft Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Guild Reports from Warcraft Logs": {
+      "main": [
+        [
+          {
+            "node": "Load Ledger for Warcraft Logs Monitor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Ledger for Warcraft Logs Monitor": {
+      "main": [
+        [
+          {
+            "node": "Classify Live, Complete, and Eligible Reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Live, Complete, and Eligible Reports": {
+      "main": [
+        [
+          {
+            "node": "Upsert Warcraft Logs Monitor Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Portal Report Intake": {
+      "main": [
+        [
+          {
+            "node": "Load Ledger for Portal Intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Ledger for Portal Intake": {
+      "main": [
+        [
+          {
+            "node": "Authorize and Prepare Portal Intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize and Prepare Portal Intake": {
+      "main": [
+        [
+          {
+            "node": "Portal Intake Requires Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Portal Intake Requires Upsert": {
+      "main": [
+        [
+          {
+            "node": "Keep Only Portal Ledger Columns",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Portal Intake Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Only Portal Ledger Columns": {
+      "main": [
+        [
+          {
+            "node": "Upsert Portal Intake Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Portal Intake Report": {
+      "main": [
+        [
+          {
+            "node": "Return Portal Intake Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "availableInMCP": false
+  }
+}

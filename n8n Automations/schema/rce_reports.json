@@ -1,0 +1,31 @@
+{
+  "name": "rce_reports",
+  "columns": [
+    { "name": "report_code", "type": "string" },
+    { "name": "expansion", "type": "string" },
+    { "name": "source", "type": "string" },
+    { "name": "requested_by", "type": "string" },
+    { "name": "state", "type": "string" },
+    { "name": "first_seen_at", "type": "date" },
+    { "name": "last_seen_at", "type": "date" },
+    { "name": "report_start_at", "type": "date" },
+    { "name": "report_end_at", "type": "date" },
+    { "name": "last_event_change_at", "type": "date" },
+    { "name": "fight_count", "type": "number" },
+    { "name": "combat_duration_ms", "type": "number" },
+    { "name": "live_observed", "type": "boolean" },
+    { "name": "eligible_at", "type": "date" },
+    { "name": "queued_at", "type": "date" },
+    { "name": "processing_started_at", "type": "date" },
+    { "name": "completed_at", "type": "date" },
+    { "name": "attempt_count", "type": "number" },
+    { "name": "last_error", "type": "string" },
+    { "name": "execution_id", "type": "string" },
+    { "name": "stage", "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "lease_expires_at", "type": "date" },
+    { "name": "heartbeat_at", "type": "date" },
+    { "name": "callback_received_at", "type": "date" },
+    { "name": "stage_attempt_count", "type": "number" }
+  ]
+}

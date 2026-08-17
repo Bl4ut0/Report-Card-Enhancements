@@ -1,0 +1,17 @@
+{
+  "name": "rce-n8n-automation",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Public-safe configuration and import tools for the RCE n8n automation workflow.",
+  "scripts": {
+    "configure": "node tools/configure-workflow.mjs",
+    "import": "node tools/import-workflow.mjs",
+    "scrub:export": "node tools/scrub-workflow-export.mjs",
+    "test": "node tools/test-package.mjs && node tools/validate-public-package.mjs",
+    "validate:public": "node tools/validate-public-package.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

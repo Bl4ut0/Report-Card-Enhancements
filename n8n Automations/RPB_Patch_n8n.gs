@@ -23,7 +23,7 @@
  *   The same patch file works for any RPB document — no spreadsheet IDs to set.
  *
  * Uploaded to: Role Performance Breakdown V1.6.0 Apps Script project
- * Version: 0.2.0
+ * Version: 0.3.0
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -44,10 +44,10 @@
  */
 var RPB_ACTION_MAP_ = {
   // ── Phase 1: Data generation — runs first ─────────────────────────────────
-  'runAllSheet':  'generateAllSheet',   // ⚠️ VERIFY — generates the All sheet data
+  'runAllSheet':  generateAllSheet,
 
   // ── Phase 2: Export — always runs after runAllSheet ───────────────────────
-  'runExport':    'generateRoleSheets', // ⚠️ VERIFY — exports to the report document
+  'runExport':    generateRoleSheets,
 };
 
 // Phase sequence for 'runFull' — order is enforced, cannot be changed via options.
@@ -98,6 +98,8 @@ function doPost(e) {
 
   var action = body.action;
   var callbackUrl = body.callbackUrl || null;
+  var correlationId = body.correlationId || null;
+  var requestedReportId = body.reportId || null;
   var options = body.options || {};
 
   // ── Status check ──
@@ -128,6 +130,10 @@ function doPost(e) {
       var lockTime = lockProps.getProperty(RPB_LOCK_TIME_);
       var lockAgeMin = lockTime ? (new Date() - new Date(lockTime)) / 60000 : 0;
       if (lockAgeMin < RPB_LOCK_TTL_MIN_) {
+        if (lockProps.getProperty(RPB_REPORT_PROP_) === reportId) {
+          lockProps.setProperty(RPB_LOCK_TIME_, new Date().toISOString());
+          return jsonResponse_({ status: 'ok', message: 'Existing RPB lock resumed for the same report.', reportId: reportId, resumed: true, project: 'RPB' });
+        }
         return jsonResponse_({
           error: 'Busy',
           message: 'An RPB run is already in progress. Wait for it to complete before queuing a new report.',
@@ -167,16 +173,12 @@ function doPost(e) {
 
   // ── Full two-phase run (generate data → export) ──
   if (action === 'runFull' || action === 'runRPB') {
-    var acceptedFull = jsonResponse_({
-      status: 'accepted',
-      action: 'runFull',
-      project: 'RPB',
-      phases: RPB_PHASE_SEQUENCE_,
-      timestamp: startTime.toISOString(),
-    });
     var fullResult = executePhasedRun_(startTime);
+    fullResult.reportId = requestedReportId || PropertiesService.getScriptProperties().getProperty(RPB_REPORT_PROP_) || null;
+    fullResult.correlationId = correlationId;
+    fullResult.callbackStage = 'RPB_COMPLETE';
     if (callbackUrl) fireCallback_(callbackUrl, fullResult);
-    return acceptedFull;
+    return jsonResponse_(fullResult);
   }
 
   // ── Validate single action ──
@@ -188,45 +190,35 @@ function doPost(e) {
     }, 400);
   }
 
-  // ── Respond immediately ──
-  var acceptedResponse = jsonResponse_({
-    status: 'accepted',
-    action: action,
-    project: 'RPB',
-    timestamp: startTime.toISOString(),
-  });
-
   // ── Execute the action ──
   var result = executeAction_(action, options, startTime);
+  result.reportId = requestedReportId || PropertiesService.getScriptProperties().getProperty(RPB_REPORT_PROP_) || null;
+  result.correlationId = correlationId;
+  result.callbackStage = 'RPB_ACTION_COMPLETE';
+  if (action === 'runExport' && result.status === 'complete') releaseLock_();
 
   // ── Fire callback ──
   if (callbackUrl) {
     fireCallback_(callbackUrl, result);
   }
 
-  return acceptedResponse;
+  return jsonResponse_(result);
 }
 
 /**
  * Web App GET entry point — health/status check.
- * Also reports which spreadsheet this Web App is bound to.
+ * Returns only a minimal public health response. Use the authenticated
+ * `status` POST action for spreadsheet and lock details.
  *
  * @param {Object} e - Apps Script event object
  * @return {ContentService.TextOutput} JSON response
  */
 function doGet(e) {
-  var ss = SpreadsheetApp.getActive();
   return jsonResponse_({
     status: 'ok',
     project: 'RPB',
-    version: '0.2.0',
-    spreadsheetId: ss ? ss.getId() : 'NOT BOUND',
-    spreadsheetName: ss ? ss.getName() : 'NOT BOUND',
-    message: 'RPB n8n patch is deployed. POST to trigger actions.',
-    availableActions: Object.keys(RPB_ACTION_MAP_).concat(['runFull', 'status']),
-    phaseSequence: RPB_PHASE_SEQUENCE_,
-    note: 'Use runFull to run both phases in order: generate data then export.',
-    timestamp: new Date().toISOString(),
+    version: '0.3.0',
+    message: 'RPB automation adapter is available. Authenticated POST is required for actions.',
   });
 }
 
@@ -316,7 +308,8 @@ function releaseLock_() {
  * @return {Object} Result payload for callback
  */
 function executeAction_(action, options, startTime) {
-  var fnName = RPB_ACTION_MAP_[action];
+  var fn = RPB_ACTION_MAP_[action];
+  var fnName = fn && fn.name ? fn.name : action;
   var result = {
     action: action,
     project: 'RPB',
@@ -330,8 +323,13 @@ function executeAction_(action, options, startTime) {
   verboseLog_('[RPB_Patch] Executing: ' + action + ' → ' + fnName);
 
   try {
-    if (typeof this[fnName] === 'function') {
-      this[fnName](options);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var allSheet = ss && ss.getSheetByName('All');
+    if (!allSheet) throw new Error('RPB sheet tab "All" was not found');
+    ss.setActiveSheet(allSheet);
+    SpreadsheetApp.flush();
+    if (typeof fn === 'function') {
+      fn(options);
       result.status = 'complete';
     } else {
       var notFoundErr = 'Function "' + fnName + '" not found in global scope. '
@@ -362,6 +360,9 @@ function executeAction_(action, options, startTime) {
 function fireCallback_(callbackUrl, result) {
   if (result.status === 'error' && result.errorPayload) {
     result.errorPayload.duration_ms = result.duration_ms;
+    result.errorPayload.reportId = result.reportId || null;
+    result.errorPayload.correlationId = result.correlationId || null;
+    result.errorPayload.callbackStage = result.callbackStage || 'RPB_ACTION_COMPLETE';
     reportErrorToN8n_(callbackUrl, result.errorPayload);
   } else {
     try {
