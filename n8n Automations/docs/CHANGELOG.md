@@ -2,6 +2,16 @@
 
 Automation patches are pre-1.0. Version numbers describe iteration state, not a stable public API.
 
+## [0.4.1] - 2026-08-17
+
+### Fixed
+
+- Live-observed reports now require both one hour from the Warcraft Logs report start and 15 minutes without an end-timestamp change before automatic queuing.
+- A between-dungeon pause can no longer queue a live report before its one-hour minimum.
+- Completed uploads that were never observed changing queue once their end timestamp is 15 minutes old and either the report is one hour old or it contains a boss kill.
+- A successful boss kill qualifies a short cleanup report even when its total fight duration is under 60 seconds.
+- Reports with a fight marked in progress cannot enter the queue.
+
 ## [0.4.0] - 2026-08-17
 
 ### Added

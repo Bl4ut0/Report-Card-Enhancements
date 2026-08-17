@@ -35,10 +35,18 @@ The workflow intentionally contains multiple trigger rows. They are separate ent
 
 The monitor requests up to 100 guild reports from the previous seven days through the Warcraft Logs v2 client API. It calculates fight count, total combat duration, report timestamps, whether the end timestamp changed between scans, and when changes were last observed.
 
-A report needs at least one fight and 60 seconds of combat data. A newly discovered completed upload can queue immediately when it does not appear live. A report observed changing remains live or stabilizing until either:
+A report normally needs at least one fight and 60 seconds of combat data. A successful boss kill also qualifies, allowing a short cleanup report to run even when its fight lasted less than 60 seconds.
 
-- no event-timestamp change is observed for 15 minutes; or
-- four hours have elapsed since it was first observed.
+A report observed live remains live or stabilizing until both:
+
+- one hour has elapsed since the report's Warcraft Logs `startTime`; and
+- no end-timestamp change has been observed for 15 minutes.
+
+This minimum-duration guard prevents an ordinary early break between dungeons from making a live report eligible. Shorter live sessions wait until their one-hour mark, while sessions that run longer remain blocked until their end timestamp is stable and no fight is marked in progress.
+
+A report that was never observed changing is treated as a completed upload after its end timestamp is at least 15 minutes old. It queues when it is at least one hour old, or immediately when it contains a boss kill. A trusted manual intake can still queue a genuinely finished short session earlier.
+
+Warcraft Logs does not expose a report-level live-uploader flag. Its report `endTime` is the timestamp of the last contained event, so an idle period longer than the stability window after the one-hour minimum is inherently indistinguishable from a finished live upload. The monitor therefore treats an observed timestamp change as proof that the report was live, rather than treating mere recency as proof.
 
 These values are embedded in the classifier Code node and can be adjusted after import.
 
