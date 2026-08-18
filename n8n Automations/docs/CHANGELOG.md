@@ -2,6 +2,14 @@
 
 Automation patches are pre-1.0. Version numbers describe iteration state, not a stable public API.
 
+## [0.4.2] - 2026-08-18
+
+### Fixed
+
+- Reduced the seven-day Warcraft Logs monitor batch from 100 to 80 reports so the `kill` and `inProgress` fight fields remain below the GraphQL query-complexity limit.
+- Prevented failed Apps Script callbacks from immediately redispatching the same checkpoint; recovery now returns to the single watchdog path so retries cannot overlap.
+- Prevented duplicate, stale, and out-of-order callbacks from redispatching the ledger's current checkpoint.
+
 ## [0.4.1] - 2026-08-17
 
 ### Fixed

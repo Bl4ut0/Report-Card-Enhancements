@@ -33,7 +33,7 @@ The workflow intentionally contains multiple trigger rows. They are separate ent
 
 ## Live-Log Detection
 
-The monitor requests up to 100 guild reports from the previous seven days through the Warcraft Logs v2 client API. It calculates fight count, total combat duration, report timestamps, whether the end timestamp changed between scans, and when changes were last observed.
+The monitor requests up to 80 guild reports from the previous seven days through the Warcraft Logs v2 client API. This keeps the fight-detail query below Warcraft Logs' GraphQL complexity ceiling. It calculates fight count, total combat duration, boss-kill and in-progress signals, report timestamps, whether the end timestamp changed between scans, and when changes were last observed.
 
 A report normally needs at least one fight and 60 seconds of combat data. A successful boss kill also qualifies, allowing a short cleanup report to run even when its fight lasted less than 60 seconds.
 
@@ -66,7 +66,7 @@ DISCOVERED / LIVE / STABILIZING
   -> COMPLETE
 ```
 
-Before dispatch, n8n records the stage, correlation ID, heartbeat, attempt counters, and lease expiry. A matching callback advances the stage. Duplicate, stale, and out-of-order callbacks are ignored.
+Before dispatch, n8n records the stage, correlation ID, heartbeat, attempt counters, and lease expiry. A matching successful callback advances the stage. Failed callbacks record the error and return control to the watchdog instead of immediately redispatching the same action. Duplicate, stale, and out-of-order callbacks are ignored.
 
 ## Recovery
 

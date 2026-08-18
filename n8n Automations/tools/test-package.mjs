@@ -39,6 +39,10 @@ const classifierNode = template.nodes.find((node) => node.name === 'Classify Liv
 assert(classifierNode?.parameters?.jsCode, 'Missing Warcraft Logs classifier code.');
 const reportsNode = template.nodes.find((node) => node.name === 'Fetch Guild Reports from Warcraft Logs');
 assert(reportsNode?.parameters?.jsonBody?.includes('encounterID kill inProgress'), 'Warcraft Logs query must request boss-kill and in-progress signals.');
+assert(reportsNode?.parameters?.jsonBody?.includes('limit: 80'), 'Warcraft Logs query must remain within the tested complexity-safe batch size.');
+const dispatchNode = template.nodes.find((node) => node.name === 'Prepare Checkpoint Dispatch');
+assert(dispatchNode?.parameters?.jsCode?.includes("lastError.startsWith('CLA ')") && dispatchNode.parameters.jsCode.includes("lastError.startsWith('RPB ')"), 'Failed callbacks must return to the watchdog instead of immediately redispatching.');
+assert(dispatchNode.parameters.jsCode.includes("lastError.startsWith('Ignored ')"), 'Ignored callbacks must not redispatch the current checkpoint.');
 
 function classifyReports({ nowMs, reports, ledgerRows = [] }) {
   class FixedDate extends Date {

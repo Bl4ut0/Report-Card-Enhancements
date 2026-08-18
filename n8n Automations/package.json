@@ -1,6 +1,6 @@
 {
   "name": "rce-n8n-automation",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "type": "module",
   "description": "Public-safe configuration and import tools for the RCE n8n automation workflow.",
