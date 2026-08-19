@@ -155,7 +155,6 @@ function doPost(e) {
       return jsonResponse_({ error: 'Sheet "' + RPB_INSTR_SHEET_ + '" not found in spreadsheet' }, 500);
     }
     instrSheet.getRange(RPB_REPORT_CELL_).setValue(reportId);
-    SpreadsheetApp.flush();
     var lockNow = new Date().toISOString();
     lockProps.setProperty(RPB_LOCK_PROP_, 'true');
     lockProps.setProperty(RPB_REPORT_PROP_, reportId);

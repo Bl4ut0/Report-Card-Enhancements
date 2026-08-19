@@ -59,7 +59,7 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "const rows=$input.all().map(i=>i.json).filter(r=>r.id&&r.report_code);\nconst now=Date.now();\nconst active=rows.filter(r=>r.state==='CLA_RUNNING'||r.state==='RPB_RUNNING').sort((a,b)=>Date.parse(a.processing_started_at||0)-Date.parse(b.processing_started_at||0))[0];\nif(active){\n  const expiry=Date.parse(active.lease_expires_at||0);\n  if(!expiry||expiry>now)return[{json:{hasWork:false,state:'WAITING',active_report:active.report_code,stage:active.stage}}];\n  return[{json:{...active,hasWork:true,recovery:true,correlation_id:String(active.correlation_id||active.execution_id||$execution.id),execution_id:String(active.correlation_id||active.execution_id||$execution.id),stage_attempt_count:Number(active.stage_attempt_count||0)+1,heartbeat_at:new Date().toISOString(),lease_expires_at:new Date(now+10*60000).toISOString(),last_error:'Checkpoint lease expired; retrying only '+active.stage}}];\n}\nconst completed=new Set(rows.filter(r=>r.state==='COMPLETE').map(r=>r.report_code));\nconst queued=rows.filter(r=>r.state==='QUEUED'&&!completed.has(r.report_code)).sort((a,b)=>Date.parse(a.queued_at||a.createdAt||0)-Date.parse(b.queued_at||b.createdAt||0));\nconst row=queued[0];\nif(!row)return[{json:{hasWork:false,state:'IDLE'}}];\nreturn[{json:{...row,hasWork:true,recovery:false,state:'CLA_RUNNING',stage:'CLA_GEAR_ISSUES',processing_started_at:new Date().toISOString(),attempt_count:Number(row.attempt_count||0)+1,stage_attempt_count:1,correlation_id:String($execution.id),execution_id:String($execution.id),heartbeat_at:new Date().toISOString(),lease_expires_at:new Date(now+10*60000).toISOString(),last_error:''}}];"
+        "jsCode": "const rows=$input.all().map(i=>i.json).filter(r=>r.id&&r.report_code);\nconst now=Date.now();\nconst active=rows.filter(r=>r.state==='CLA_RUNNING'||r.state==='RPB_RUNNING').sort((a,b)=>Date.parse(a.processing_started_at||0)-Date.parse(b.processing_started_at||0))[0];\nif(active){\n  const expiry=Date.parse(active.lease_expires_at||0);\n  const priorRecoveryFailed=Number(active.stage_attempt_count||0)>1&&String(active.last_error||'').startsWith('Checkpoint lease expired;');\n  const retryAt=Date.parse(active.heartbeat_at||0)+2*60000;\n  const rpbSetupResponseLost=active.stage==='RPB_ALL_DATA'&&Number(active.stage_attempt_count||0)===1&&Boolean(active.callback_received_at)&&retryAt<=now;\n  if(priorRecoveryFailed&&retryAt>now)return[{json:{hasWork:false,state:'WAITING',active_report:active.report_code,stage:active.stage}}];\n  if(!rpbSetupResponseLost&&!priorRecoveryFailed&&(!expiry||expiry>now))return[{json:{hasWork:false,state:'WAITING',active_report:active.report_code,stage:active.stage}}];\n  return[{json:{...active,hasWork:true,recovery:true,correlation_id:String(active.correlation_id||active.execution_id||$execution.id),execution_id:String(active.correlation_id||active.execution_id||$execution.id),stage_attempt_count:Number(active.stage_attempt_count||0)+1,heartbeat_at:new Date().toISOString(),lease_expires_at:new Date(now+10*60000).toISOString(),last_error:''}}];\n}\nconst completed=new Set(rows.filter(r=>r.state==='COMPLETE').map(r=>r.report_code));\nconst queued=rows.filter(r=>r.state==='QUEUED'&&!completed.has(r.report_code)).sort((a,b)=>Date.parse(a.queued_at||a.createdAt||0)-Date.parse(b.queued_at||b.createdAt||0));\nconst row=queued[0];\nif(!row)return[{json:{hasWork:false,state:'IDLE'}}];\nreturn[{json:{...row,hasWork:true,recovery:false,state:'CLA_RUNNING',stage:'CLA_GEAR_ISSUES',processing_started_at:new Date().toISOString(),attempt_count:Number(row.attempt_count||0)+1,stage_attempt_count:1,correlation_id:String($execution.id),execution_id:String($execution.id),heartbeat_at:new Date().toISOString(),lease_expires_at:new Date(now+10*60000).toISOString(),last_error:''}}];"
       }
     },
     {
@@ -372,7 +372,7 @@
         }
       },
       "executeOnce": true,
-      "retryOnFail": true,
+      "retryOnFail": false,
       "credentials": {
         "httpCustomAuth": {
           "id": "__RCE_APPS_SCRIPT_CREDENTIAL_ID__",
@@ -414,7 +414,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { action: $(\"Prepare Checkpoint Dispatch\").item.json.action, reportId: $(\"Prepare Checkpoint Dispatch\").item.json.report_code, correlationId: $(\"Prepare Checkpoint Dispatch\").item.json.correlation_id, callbackUrl: $(\"Prepare Checkpoint Dispatch\").item.json.callbackUrl, options: { suppressCoreDiscord: false } } }}",
         "options": {
-          "timeout": 300000,
+          "timeout": 390000,
           "response": {
             "response": {
               "neverError": true,
@@ -458,6 +458,15 @@
                 "type": "string",
                 "operation": "equals"
               }
+            },
+            {
+              "id": "cla-first-attempt",
+              "leftValue": "={{ Number($json.stage_attempt_count || 1) }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
             }
           ]
         }
@@ -492,7 +501,7 @@
         }
       },
       "executeOnce": true,
-      "retryOnFail": true,
+      "retryOnFail": false,
       "credentials": {
         "httpCustomAuth": {
           "id": "__RCE_APPS_SCRIPT_CREDENTIAL_ID__",
@@ -534,7 +543,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { action: $(\"Prepare Checkpoint Dispatch\").item.json.action, reportId: $(\"Prepare Checkpoint Dispatch\").item.json.report_code, correlationId: $(\"Prepare Checkpoint Dispatch\").item.json.correlation_id, callbackUrl: $(\"Prepare Checkpoint Dispatch\").item.json.callbackUrl } }}",
         "options": {
-          "timeout": 300000,
+          "timeout": 390000,
           "response": {
             "response": {
               "neverError": true,
@@ -577,6 +586,15 @@
               "operator": {
                 "type": "string",
                 "operation": "equals"
+              }
+            },
+            {
+              "id": "rpb-first-attempt",
+              "leftValue": "={{ Number($json.stage_attempt_count || 1) }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
               }
             }
           ]

@@ -211,7 +211,6 @@ function doPost(e) {
       return jsonResponse_({ error: 'Sheet "' + CLA_INSTR_SHEET_ + '" not found in spreadsheet' }, 500);
     }
     instrSheet.getRange(CLA_REPORT_CELL_).setValue(reportId);
-    SpreadsheetApp.flush();
     var lockNow = new Date().toISOString();
     lockProps.setProperty(CLA_LOCK_PROP_, 'true');
     lockProps.setProperty(CLA_REPORT_PROP_, reportId);
