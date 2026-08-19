@@ -11,7 +11,7 @@ const template = readJson(path.join(automationRoot, 'workflows', 'rce-unified.te
 const schema = readJson(path.join(automationRoot, 'schema', 'rce_reports.json'));
 
 assert(template.name === '__RCE_WORKFLOW_NAME__', 'Workflow name must remain a placeholder.');
-assert(template.nodes.length === 33, `Expected 33 workflow nodes, found ${template.nodes.length}.`);
+assert(template.nodes.length === 37, `Expected 37 workflow nodes, found ${template.nodes.length}.`);
 assert(!('id' in template), 'Public workflow template must not contain a live workflow ID.');
 assert(template.settings?.availableInMCP === false, 'Public workflow should not expose MCP access by default.');
 

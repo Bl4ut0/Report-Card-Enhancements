@@ -349,8 +349,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1920,
-        80
+        2160,
+        40
       ],
       "parameters": {
         "method": "POST",
@@ -366,7 +366,7 @@
           "response": {
             "response": {
               "neverError": true,
-              "responseFormat": "json"
+              "responseFormat": "text"
             }
           }
         }
@@ -381,12 +381,27 @@
       }
     },
     {
+      "id": "b34cf8d2-214b-4e12-a35b-0c61c2c28a31",
+      "name": "Validate CLA Lock Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        40
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const response = $input.first()?.json ?? {};\nconst raw = response.data ?? response.body ?? response;\nconst expected = $(\"Prepare Checkpoint Dispatch\").first().json;\nlet payload;\ntry {\n  payload = typeof raw === 'string' ? JSON.parse(raw) : raw;\n} catch (error) {\n  throw new Error('CLA setReportId returned a non-JSON response; the saved checkpoint will retry after its lease expires.');\n}\nif (payload?.status !== 'ok' || payload?.project !== 'CLA' || String(payload?.reportId || '') !== String(expected.report_code || '')) {\n  throw new Error(`CLA setReportId was not confirmed for ${expected.report_code}: ${JSON.stringify(payload).slice(0, 500)}`);\n}\nreturn [{ json: payload }];"
+      }
+    },
+    {
       "id": "5161befa-3a69-4959-b893-70fca874745c",
       "name": "Run One CLA Checkpoint",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2160,
+        2640,
         80
       ],
       "parameters": {
@@ -418,13 +433,44 @@
       }
     },
     {
+      "id": "c7193bcf-a2ca-416b-bb9d-fbed2b97c84d",
+      "name": "CLA Report Lock Required",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        80
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cla-first-stage",
+              "leftValue": "={{ $json.stage }}",
+              "rightValue": "CLA_GEAR_ISSUES",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "40a5c1aa-e8bb-4e93-805f-07d700a8c6a7",
       "name": "RPB Ensure Report ID and Lock",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1920,
-        240
+        2160,
+        280
       ],
       "parameters": {
         "method": "POST",
@@ -440,7 +486,7 @@
           "response": {
             "response": {
               "neverError": true,
-              "responseFormat": "json"
+              "responseFormat": "text"
             }
           }
         }
@@ -455,12 +501,27 @@
       }
     },
     {
+      "id": "4c7840e4-d7d5-43fc-a067-1f408122a1bb",
+      "name": "Validate RPB Lock Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const response = $input.first()?.json ?? {};\nconst raw = response.data ?? response.body ?? response;\nconst expected = $(\"Prepare Checkpoint Dispatch\").first().json;\nlet payload;\ntry {\n  payload = typeof raw === 'string' ? JSON.parse(raw) : raw;\n} catch (error) {\n  throw new Error('RPB setReportId returned a non-JSON response; the saved checkpoint will retry after its lease expires.');\n}\nif (payload?.status !== 'ok' || payload?.project !== 'RPB' || String(payload?.reportId || '') !== String(expected.report_code || '')) {\n  throw new Error(`RPB setReportId was not confirmed for ${expected.report_code}: ${JSON.stringify(payload).slice(0, 500)}`);\n}\nreturn [{ json: payload }];"
+      }
+    },
+    {
       "id": "8e0ab06e-8f6a-4f4d-be91-6508d2fd7b19",
       "name": "Run One RPB Checkpoint",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2160,
+        2640,
         240
       ],
       "parameters": {
@@ -488,6 +549,37 @@
         "httpCustomAuth": {
           "id": "__RCE_APPS_SCRIPT_CREDENTIAL_ID__",
           "name": "__RCE_APPS_SCRIPT_CREDENTIAL_NAME__"
+        }
+      }
+    },
+    {
+      "id": "ac90b2fd-e6e8-4a0c-96aa-8db209aefce7",
+      "name": "RPB Report Lock Required",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "rpb-first-stage",
+              "leftValue": "={{ $json.stage }}",
+              "rightValue": "RPB_ALL_DATA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
         }
       }
     },
@@ -1451,6 +1543,24 @@
       "main": [
         [
           {
+            "node": "CLA Report Lock Required",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RPB Report Lock Required",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CLA Report Lock Required": {
+      "main": [
+        [
+          {
             "node": "CLA Ensure Report ID and Lock",
             "type": "main",
             "index": 0
@@ -1458,7 +1568,7 @@
         ],
         [
           {
-            "node": "RPB Ensure Report ID and Lock",
+            "node": "Run One CLA Checkpoint",
             "type": "main",
             "index": 0
           }
@@ -1469,6 +1579,17 @@
       "main": [
         [
           {
+            "node": "Validate CLA Lock Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate CLA Lock Response": {
+      "main": [
+        [
+          {
             "node": "Run One CLA Checkpoint",
             "type": "main",
             "index": 0
@@ -1476,7 +1597,36 @@
         ]
       ]
     },
+    "RPB Report Lock Required": {
+      "main": [
+        [
+          {
+            "node": "RPB Ensure Report ID and Lock",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Run One RPB Checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "RPB Ensure Report ID and Lock": {
+      "main": [
+        [
+          {
+            "node": "Validate RPB Lock Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate RPB Lock Response": {
       "main": [
         [
           {
